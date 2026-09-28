@@ -103,10 +103,10 @@ include __DIR__ . '/../layout/header.php';
 
         <div class="form-row" style="margin-top: 0.75rem;">
           <div class="form-group" style="flex: 1;">
-            <label for="delivery_order_number"><i class="bi bi-receipt me-1"></i> No. Surat Jalan / No. PO / Referensi (Opsional)</label>
-            <input type="text" name="delivery_order_number" id="delivery_order_number" class="form-control" placeholder="Contoh: SJ-2026/09/001 atau PO-1029">
+            <label for="delivery_order_number"><i class="bi bi-receipt me-1"></i> No. Surat Jalan Vendor (Opsional)</label>
+            <input type="text" name="delivery_order_number" id="delivery_order_number" class="form-control" placeholder="Contoh: SJ-2026/09/001">
           </div>
-          <div class="form-group" style="flex: 1;">
+          <div class="form-group" style="flex: 2;">
             <label for="notes"><i class="bi bi-chat-left-dots me-1"></i> Catatan Penerimaan (Opsional)</label>
             <input type="text" name="notes" id="notes" class="form-control" placeholder="Keterangan pengiriman, ekspedisi, kondisi paket, dsb.">
           </div>

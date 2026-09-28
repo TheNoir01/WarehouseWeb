@@ -552,8 +552,8 @@ label {
 }
 
 /* Utilities */
-.text-right { text-align: right; }
-.text-center { text-align: center; }
+.text-right, .table th.text-right, .table td.text-right { text-align: right !important; }
+.text-center, .table th.text-center, .table td.text-center { text-align: center !important; }
 .text-muted { color: #64748b; }
 .fw-bold { font-weight: 700; }
 .d-flex { display: flex; }

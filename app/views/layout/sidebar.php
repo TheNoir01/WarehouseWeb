@@ -12,43 +12,52 @@ $user = currentUser();
   </div>
 
   <ul class="sidebar-menu">
-    <li class="<?= $currentRoute === 'dashboard' ? 'active' : '' ?>">
-      <a href="<?= url('dashboard') ?>">
-        <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
-      </a>
-    </li>
+    <?php if (isPurchasing()): ?>
+      <li class="menu-category">Menu Purchasing</li>
+      <li class="<?= str_starts_with($currentRoute, 'items') ? 'active' : '' ?>">
+        <a href="<?= url('items') ?>">
+          <i class="bi bi-boxes"></i> <span>Daftar Barang</span>
+        </a>
+      </li>
+    <?php else: ?>
+      <li class="<?= $currentRoute === 'dashboard' ? 'active' : '' ?>">
+        <a href="<?= url('dashboard') ?>">
+          <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
+        </a>
+      </li>
 
-    <li class="menu-category">Inventori & Transaksi</li>
+      <li class="menu-category">Inventori & Transaksi</li>
 
-    <li class="<?= str_starts_with($currentRoute, 'items') ? 'active' : '' ?>">
-      <a href="<?= url('items') ?>">
-        <i class="bi bi-boxes"></i> <span>Daftar Barang</span>
-      </a>
-    </li>
+      <li class="<?= str_starts_with($currentRoute, 'items') ? 'active' : '' ?>">
+        <a href="<?= url('items') ?>">
+          <i class="bi bi-boxes"></i> <span>Daftar Barang</span>
+        </a>
+      </li>
 
-    <li class="<?= str_starts_with($currentRoute, 'receipts') ? 'active' : '' ?>">
-      <a href="<?= url('receipts') ?>">
-        <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
-      </a>
-    </li>
+      <li class="<?= str_starts_with($currentRoute, 'receipts') ? 'active' : '' ?>">
+        <a href="<?= url('receipts') ?>">
+          <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
+        </a>
+      </li>
 
-    <li class="<?= str_starts_with($currentRoute, 'issues') ? 'active' : '' ?>">
-      <a href="<?= url('issues') ?>">
-        <i class="bi bi-box-arrow-up"></i> <span>Barang Keluar</span>
-      </a>
-    </li>
+      <li class="<?= str_starts_with($currentRoute, 'issues') ? 'active' : '' ?>">
+        <a href="<?= url('issues') ?>">
+          <i class="bi bi-box-arrow-up"></i> <span>Barang Keluar</span>
+        </a>
+      </li>
 
-    <li class="<?= str_starts_with($currentRoute, 'returns') ? 'active' : '' ?>">
-      <a href="<?= url('returns') ?>">
-        <i class="bi bi-arrow-repeat"></i> <span>Pengembalian</span>
-      </a>
-    </li>
+      <li class="<?= str_starts_with($currentRoute, 'returns') ? 'active' : '' ?>">
+        <a href="<?= url('returns') ?>">
+          <i class="bi bi-arrow-repeat"></i> <span>Pengembalian</span>
+        </a>
+      </li>
 
-    <li class="<?= str_starts_with($currentRoute, 'remnants') ? 'active' : '' ?>">
-      <a href="<?= url('remnants') ?>">
-        <i class="bi bi-scissors"></i> <span>Sisa Material</span>
-      </a>
-    </li>
+      <li class="<?= str_starts_with($currentRoute, 'remnants') ? 'active' : '' ?>">
+        <a href="<?= url('remnants') ?>">
+          <i class="bi bi-scissors"></i> <span>Sisa Material</span>
+        </a>
+      </li>
+    <?php endif; ?>
 
     <?php if (canManageMaster()): ?>
       <li class="menu-category">Master Data</li>

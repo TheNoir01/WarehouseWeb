@@ -13,7 +13,17 @@ include __DIR__ . '/../layout/header.php';
       Tanggal: <?= formatDate($receipt['received_date']) ?>
     </span>
   </div>
-  <div class="d-flex gap-1">
+  <div class="d-flex gap-1 align-center">
+    <?php if (canManagePurchasing()): ?>
+      <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $receipt['id'] ?>" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
+        <i class="bi bi-tag-fill me-1"></i> Input / Edit PO & Harga
+      </a>
+    <?php endif; ?>
+    <?php if (canManageMaster()): ?>
+      <a href="<?= url('receipts/edit') ?>&id=<?= $receipt['id'] ?>" class="btn btn-warning btn-sm" style="color: #1e293b; font-weight: 600;">
+        <i class="bi bi-pencil-square me-1"></i> Koreksi / Edit Penerimaan
+      </a>
+    <?php endif; ?>
     <button onclick="window.print()" class="btn btn-outline btn-sm">
       <i class="bi bi-printer"></i> Cetak Bukti
     </button>
@@ -29,7 +39,7 @@ include __DIR__ . '/../layout/header.php';
     <span class="badge badge-success"><?= strtoupper($receipt['status'] ?? 'COMPLETED') ?></span>
   </div>
   <div class="card-body">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
       <div>
         <div class="text-muted" style="font-size: 0.8rem;">PT Pemilik Stok</div>
         <div class="fw-bold"><?= htmlspecialchars($receipt['company']['name'] ?? '-') ?></div>
@@ -62,18 +72,27 @@ include __DIR__ . '/../layout/header.php';
       <table class="table">
         <thead>
           <tr>
-            <th style="width: 5%;">No</th>
+            <th style="width: 4%;">No</th>
             <th>ID Barang</th>
             <th>Nama Barang & Spesifikasi</th>
-            <th>Lokasi Rak Gudang</th>
+            <th>Lokasi Rak</th>
             <th class="text-right">Kuantitas</th>
             <th>Satuan</th>
-            <th>Kondisi Fisik</th>
+            <th class="text-right">Harga Satuan</th>
+            <th class="text-right">Total Harga</th>
+            <th>Kondisi</th>
             <th>Keterangan</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($receipt['items'] ?? [] as $idx => $itemRow): ?>
+          <?php 
+          $grandTotal = 0;
+          foreach ($receipt['items'] ?? [] as $idx => $itemRow): 
+            $qty = (float) $itemRow['qty'];
+            $unitPrice = (float) ($itemRow['unit_price'] ?? 0);
+            $totalPrice = (float) ($itemRow['total_price'] ?? ($qty * $unitPrice));
+            $grandTotal += $totalPrice;
+          ?>
             <tr>
               <td><?= $idx + 1 ?></td>
               <td style="font-family: monospace; font-weight: 600; color: var(--primary);">
@@ -93,6 +112,12 @@ include __DIR__ . '/../layout/header.php';
                 +<?= formatQty($itemRow['qty']) ?>
               </td>
               <td><?= htmlspecialchars($itemRow['item']['unit']['code'] ?? '-') ?></td>
+              <td class="text-right" style="font-family: monospace;">
+                <?= $unitPrice > 0 ? formatRupiah($unitPrice) : '<span class="text-muted">-</span>' ?>
+              </td>
+              <td class="text-right fw-bold" style="font-family: monospace; color: #0369a1;">
+                <?= $totalPrice > 0 ? formatRupiah($totalPrice) : '<span class="text-muted">-</span>' ?>
+              </td>
               <td>
                 <span class="badge <?= ($itemRow['condition'] ?? 'good') === 'good' ? 'badge-success' : 'badge-danger' ?>">
                   <?= strtoupper($itemRow['condition'] ?? 'good') ?>
@@ -102,6 +127,17 @@ include __DIR__ . '/../layout/header.php';
             </tr>
           <?php endforeach; ?>
         </tbody>
+        <?php if ($grandTotal > 0): ?>
+          <tfoot>
+            <tr style="background: #f1f5f9; font-weight: 700;">
+              <td colspan="7" class="text-right" style="font-size: 0.95rem;">Grand Total Nilai Pembelian:</td>
+              <td class="text-right" style="font-size: 1.05rem; font-family: monospace; color: #0284c7;">
+                <?= formatRupiah($grandTotal) ?>
+              </td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        <?php endif; ?>
       </table>
     </div>
 

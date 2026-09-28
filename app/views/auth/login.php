@@ -103,6 +103,7 @@ $flash = getFlash();
       <span class="demo-btn" onclick="fillDemo('kepala@warehouse.test')">Kepala Gudang</span>
       <span class="demo-btn" onclick="fillDemo('karyawan@warehouse.test')">Karyawan</span>
       <span class="demo-btn" onclick="fillDemo('admin@warehouse.test')">Admin</span>
+      <span class="demo-btn" onclick="fillDemo('purchasing@warehouse.test')">Purchasing</span>
     </div>
   </div>
 </div>

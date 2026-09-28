@@ -9,7 +9,7 @@ class AuthController
     public function login(): void
     {
         if (isAuthenticated()) {
-            redirect('dashboard');
+            redirect(isPurchasing() ? 'items' : 'dashboard');
         }
         include __DIR__ . '/../views/auth/login.php';
     }
@@ -33,7 +33,8 @@ class AuthController
         if (!empty($response['success']) && !empty($response['data']['token'])) {
             $_SESSION['token'] = $response['data']['token'];
             $_SESSION['user'] = $response['data']['user'];
-            redirect('dashboard', 'Selamat datang kembali, ' . $response['data']['user']['name'] . '!');
+            $target = ($response['data']['user']['role'] ?? '') === 'purchasing' ? 'items' : 'dashboard';
+            redirect($target, 'Selamat datang kembali, ' . $response['data']['user']['name'] . '!');
         } else {
             $msg = $response['message'] ?? 'Login gagal. Periksa kredensial Anda.';
             redirect('login', $msg, 'danger');

@@ -96,6 +96,32 @@ function isKaryawan(): bool
     return (currentUser()['role'] ?? '') === 'karyawan';
 }
 
+function isPurchasing(): bool
+{
+    return (currentUser()['role'] ?? '') === 'purchasing';
+}
+
+function canManagePurchasing(): bool
+{
+    return isPurchasing();
+}
+
+function canEditPrice(): bool
+{
+    return isPurchasing();
+}
+
+function canEditItem(): bool
+{
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);
+}
+
+function formatRupiah($amount): string
+{
+    return 'Rp ' . number_format((float) $amount, 0, ',', '.');
+}
+
 function canManageMaster(): bool
 {
     $role = currentUser()['role'] ?? '';

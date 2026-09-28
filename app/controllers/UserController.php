@@ -49,4 +49,37 @@ class UserController
             redirect('users', $res['message'] ?? 'Gagal mendaftarkan pengguna.', 'danger');
         }
     }
+
+    public function update(): void
+    {
+        if (!canManageUsers()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
+        }
+
+        $id = (int) ($_POST['user_id'] ?? 0);
+        if (!$id) {
+            redirect('users');
+        }
+
+        $payload = [
+            'name' => trim($_POST['name'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'username' => trim($_POST['username'] ?? '') ?: null,
+            'role_id' => (int) ($_POST['role_id'] ?? 0),
+            'company_id' => !empty($_POST['company_id']) ? (int) $_POST['company_id'] : null,
+            'is_active' => isset($_POST['is_active']) ? (int) $_POST['is_active'] : 1,
+        ];
+
+        if (!empty($_POST['password'])) {
+            $payload['password'] = $_POST['password'];
+        }
+
+        $res = $this->api->put("users/{$id}", $payload);
+
+        if (!empty($res['success'])) {
+            redirect('users', 'Data pengguna [' . ($res['data']['name'] ?? '') . '] berhasil diperbarui!');
+        } else {
+            redirect('users', $res['message'] ?? 'Gagal memperbarui pengguna.', 'danger');
+        }
+    }
 }

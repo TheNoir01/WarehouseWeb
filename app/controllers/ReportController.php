@@ -19,17 +19,135 @@ class ReportController
             redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk melihat laporan stok per PT.', 'danger');
         }
 
+        $perPageParam = $_GET['per_page'] ?? '25';
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+
         $params = [
-            'page' => $_GET['page'] ?? 1,
             'search' => $_GET['search'] ?? '',
             'company_id' => $_GET['company_id'] ?? '',
         ];
 
-        $res = $this->api->get('stock', array_filter($params));
+        if ($perPageParam === 'all' || (int)$perPageParam === -1) {
+            $params['all'] = 1;
+        } else {
+            $perPage = in_array((int)$perPageParam, [10, 25, 50, 100]) ? (int)$perPageParam : 25;
+            $params['per_page'] = $perPage;
+            $params['page'] = $page;
+        }
+
+        $res = $this->api->get('stock', array_filter($params, fn($v) => $v !== null && $v !== ''));
         $balances = $res['data'] ?? [];
         $meta = $res['meta'] ?? [];
 
         $companies = $this->api->get('companies')['data'] ?? [];
+
+        if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+            header('Content-Type: application/json; charset=utf-8');
+            ob_start();
+            if (empty($balances)) {
+                ?>
+                <tr id="emptyDbRow"><td colspan="8" class="text-center text-muted" style="padding: 2.5rem;">
+                  <i class="bi bi-search" style="font-size: 1.5rem; display: block; margin: 0 auto 0.5rem; color: #94a3b8;"></i>
+                  Tidak ada data stok yang cocok dengan kata kunci pencarian atau filter yang dipilih.
+                </td></tr>
+                <?php
+            } else {
+                foreach ($balances as $b) {
+                    $item = $b['item'] ?? [];
+                    $stock = (float) ($b['qty'] ?? 0);
+                    $min = (float) ($item['minimum_stock'] ?? 0);
+                    $stockStatus = $b['stock_status'] ?? ($stock <= 0 ? 'HABIS' : (($min > 0 && $stock <= $min) ? 'MENIPIS' : 'TERSEDIA'));
+                    ?>
+                    <tr>
+                      <td><span class="badge badge-primary"><?= htmlspecialchars($b['company']['code'] ?? 'N/A') ?></span></td>
+                      <td>
+                        <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
+                          <?= htmlspecialchars($item['item_code'] ?? '-') ?>
+                        </span>
+                      </td>
+                      <td>
+                        <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?? '' ?>" class="fw-bold" style="color: #1e40af; text-decoration: none;">
+                          <?= htmlspecialchars($item['name'] ?? '-') ?>
+                        </a>
+                        <?php if (!empty($item['specification'])): ?>
+                          <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($item['specification']) ?></div>
+                        <?php endif; ?>
+                      </td>
+                      <td><?= htmlspecialchars($item['category']['name'] ?? '-') ?></td>
+                      <td><?= htmlspecialchars($item['unit']['code'] ?? '-') ?></td>
+                      <td class="fw-bold" style="font-size: 1rem;">
+                        <?= formatQty($stock, $item['unit']['code'] ?? '') ?>
+                      </td>
+                      <td><?= renderBadge($stockStatus) ?></td>
+                      <td class="text-muted" style="font-size: 0.85rem;"><?= formatDateTime($b['last_movement_at'] ?? $b['updated_at'] ?? null) ?></td>
+                    </tr>
+                    <?php
+                }
+            }
+            $rowsHtml = ob_get_clean();
+
+            $cur = (int) ($meta['current_page'] ?? 1);
+            $last = (int) ($meta['last_page'] ?? 1);
+            $total = (int) ($meta['total'] ?? count($balances));
+            $perPageVal = $perPageParam;
+            $perPageNum = (int) ($meta['per_page'] ?? ($perPageVal !== 'all' ? (int)$perPageVal : $total));
+            $from = ($total > 0 && $perPageVal !== 'all') ? (($cur - 1) * $perPageNum + 1) : ($total > 0 ? 1 : 0);
+            $to = ($perPageVal !== 'all') ? min($total, $cur * $perPageNum) : $total;
+
+            ob_start();
+            if ($perPageVal === 'all') {
+                echo 'Menampilkan seluruh <strong>' . number_format($total, 0, ',', '.') . '</strong> data stok barang.';
+            } else {
+                echo 'Menampilkan baris <strong>' . number_format($from, 0, ',', '.') . '</strong> - <strong>' . number_format($to, 0, ',', '.') . '</strong> dari total <strong>' . number_format($total, 0, ',', '.') . '</strong> data barang (Halaman <strong>' . $cur . '</strong> dari <strong>' . $last . '</strong>)';
+            }
+            $summaryHtml = ob_get_clean();
+
+            ob_start();
+            if ($last > 1 && $perPageVal !== 'all') {
+                ?>
+                <div class="pagination" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                  <?php if ($cur > 1): ?>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="1" style="padding: 4px 8px;" title="Halaman Pertama">&laquo;</button>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $cur - 1 ?>" style="padding: 4px 8px;" title="Sebelumnya">&lsaquo;</button>
+                  <?php endif; ?>
+
+                  <?php
+                    $startPage = max(1, $cur - 2);
+                    $endPage = min($last, $cur + 2);
+                    if ($startPage > 1) {
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="1" style="padding: 4px 10px;">1</button>';
+                      if ($startPage > 2) echo '<span class="text-muted" style="padding: 0 4px;">...</span>';
+                    }
+                    for ($p = $startPage; $p <= $endPage; $p++) {
+                      $activeStyle = ($p == $cur) ? 'background-color: var(--primary); color: #fff; border-color: var(--primary); font-weight: bold;' : '';
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="' . $p . '" style="padding: 4px 10px; ' . $activeStyle . '">' . $p . '</button>';
+                    }
+                    if ($endPage < $last) {
+                      if ($endPage < $last - 1) echo '<span class="text-muted" style="padding: 0 4px;">...</span>';
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="' . $last . '" style="padding: 4px 10px;">' . $last . '</button>';
+                    }
+                  ?>
+
+                  <?php if ($cur < $last): ?>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $cur + 1 ?>" style="padding: 4px 8px;" title="Selanjutnya">&rsaquo;</button>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $last ?>" style="padding: 4px 8px;" title="Halaman Terakhir">&raquo;</button>
+                  <?php endif; ?>
+                </div>
+                <?php
+            }
+            $paginationHtml = ob_get_clean();
+
+            echo json_encode([
+                'success' => true,
+                'rows_html' => $rowsHtml,
+                'summary_html' => $summaryHtml,
+                'pagination_html' => $paginationHtml,
+                'total' => $total,
+                'current_page' => $cur,
+                'last_page' => $last,
+            ]);
+            exit;
+        }
 
         include __DIR__ . '/../views/reports/stock.php';
     }

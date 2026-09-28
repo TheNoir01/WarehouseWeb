@@ -120,6 +120,7 @@ class GoodsReceiptController
 
         $supplierName = trim($_POST['supplier_name'] ?? '');
         $deliveryOrderNumber = trim($_POST['delivery_order_number'] ?? '');
+        $poNumber = trim($_POST['po_number'] ?? '');
         $warehouseId = !empty($_POST['warehouse_id']) ? (int) $_POST['warehouse_id'] : null;
         $supplierId = !empty($_POST['supplier_id']) ? (int) $_POST['supplier_id'] : null;
 
@@ -138,6 +139,9 @@ class GoodsReceiptController
         }
         if (!empty($deliveryOrderNumber)) {
             $payload['delivery_order_number'] = $deliveryOrderNumber;
+        }
+        if (!empty($poNumber)) {
+            $payload['po_number'] = $poNumber;
         }
 
         $res = $this->api->post('goods-receipts', $payload);
@@ -162,6 +166,146 @@ class GoodsReceiptController
 
         $receipt = $res['data'];
         include __DIR__ . '/../views/receipts/show.php';
+    }
+
+    public function edit(): void
+    {
+        if (!canManageMaster()) {
+            redirect('receipts', 'Akses ditolak. Hanya Kepala Gudang / Admin yang dapat mengoreksi penerimaan barang.', 'danger');
+        }
+
+        $id = $_GET['id'] ?? null;
+        if (!$id) redirect('receipts');
+
+        $res = $this->api->get("goods-receipts/{$id}");
+        if (empty($res['success'])) {
+            redirect('receipts', 'Dokumen penerimaan tidak ditemukan.', 'danger');
+        }
+
+        $receipt = $res['data'];
+        $companies = $this->api->get('companies')['data'] ?? [];
+        $locations = $this->api->get('locations')['data'] ?? [];
+        $suppliers = $this->api->get('suppliers')['data'] ?? [];
+
+        include __DIR__ . '/../views/receipts/edit.php';
+    }
+
+    public function update(): void
+    {
+        if (!canManageMaster()) {
+            redirect('receipts', 'Akses ditolak.', 'danger');
+        }
+
+        $id = (int) ($_POST['receipt_id'] ?? 0);
+        if (!$id) redirect('receipts');
+
+        $rawItems = $_POST['items'] ?? [];
+        $items = [];
+        $defaultLocId = 1;
+        $locRes = $this->api->get('locations');
+        if (!empty($locRes['data'])) {
+            $defaultLocId = (int) $locRes['data'][0]['id'];
+        }
+
+        foreach ($rawItems as $row) {
+            $qty = isset($row['qty']) ? (float) str_replace(',', '.', trim((string) $row['qty'])) : 0.0;
+            $itemId = (int) ($row['item_id'] ?? 0);
+            if ($itemId > 0 && $qty > 0) {
+                $locId = !empty($row['warehouse_location_id']) ? (int) $row['warehouse_location_id'] : $defaultLocId;
+                $itemPayload = [
+                    'item_id' => $itemId,
+                    'warehouse_location_id' => $locId,
+                    'qty' => $qty,
+                    'condition' => $row['condition'] ?? 'good',
+                    'notes' => trim($row['notes'] ?? ''),
+                ];
+                if (!empty($row['id'])) {
+                    $itemPayload['id'] = (int) $row['id'];
+                }
+                $items[] = $itemPayload;
+            }
+        }
+
+        if (empty($items)) {
+            redirect("receipts/edit&id={$id}", 'Minimal harus ada 1 barang dengan jumlah lebih dari 0.', 'danger');
+        }
+
+        $payload = [
+            'delivery_order_number' => trim($_POST['delivery_order_number'] ?? ''),
+            'supplier_name' => trim($_POST['supplier_name'] ?? ''),
+            'notes' => trim($_POST['notes'] ?? ''),
+            'items' => $items,
+        ];
+
+        $res = $this->api->put("goods-receipts/{$id}", $payload);
+
+        if (!empty($res['success'])) {
+            redirect("receipts/show&id={$id}", 'Dokumen penerimaan berhasil dikoreksi dan stok diperbarui tanpa mengubah urutan FIFO!');
+        } else {
+            $msg = $res['message'] ?? 'Gagal mengoreksi penerimaan barang.';
+            redirect("receipts/edit&id={$id}", $msg, 'danger');
+        }
+    }
+
+    public function editPurchasing(): void
+    {
+        if (!canManagePurchasing()) {
+            redirect('receipts', 'Akses ditolak. Hanya Purchasing, Kepala Gudang, atau Admin yang dapat mengubah PO & harga.', 'danger');
+        }
+
+        $id = $_GET['id'] ?? null;
+        if (!$id) redirect('receipts');
+
+        $res = $this->api->get("goods-receipts/{$id}");
+        if (empty($res['success'])) {
+            redirect('receipts', 'Dokumen penerimaan tidak ditemukan.', 'danger');
+        }
+
+        $receipt = $res['data'];
+        include __DIR__ . '/../views/receipts/edit_purchasing.php';
+    }
+
+    public function updatePurchasing(): void
+    {
+        if (!canManagePurchasing()) {
+            redirect('receipts', 'Akses ditolak.', 'danger');
+        }
+
+        $id = (int) ($_POST['receipt_id'] ?? 0);
+        if (!$id) redirect('receipts');
+
+        $poNumber = trim($_POST['po_number'] ?? '');
+        $rawItems = $_POST['items'] ?? [];
+
+        $items = [];
+        foreach ($rawItems as $row) {
+            $itemId = (int) ($row['id'] ?? 0);
+            $unitPrice = isset($row['unit_price']) ? (float) str_replace(',', '.', trim((string) $row['unit_price'])) : 0.0;
+            $qty = isset($row['qty']) ? (float) str_replace(',', '.', trim((string) $row['qty'])) : 0.0;
+            $totalPrice = round($unitPrice * $qty, 2);
+
+            if ($itemId > 0) {
+                $items[] = [
+                    'id' => $itemId,
+                    'unit_price' => max(0, $unitPrice),
+                    'total_price' => max(0, $totalPrice),
+                ];
+            }
+        }
+
+        $payload = [
+            'po_number' => $poNumber ?: null,
+            'items' => $items,
+        ];
+
+        $res = $this->api->put("goods-receipts/{$id}/purchasing", $payload);
+
+        if (!empty($res['success'])) {
+            redirect("receipts/show&id={$id}", 'Nomor PO dan harga barang berhasil disimpan!');
+        } else {
+            $msg = $res['message'] ?? 'Gagal memperbarui data PO dan harga.';
+            redirect("receipts/edit-purchasing&id={$id}", $msg, 'danger');
+        }
     }
 
     public function exportExcel(): void
@@ -219,7 +363,9 @@ class GoodsReceiptController
 
             $docNum = $r['receipt_number'] ?? '-';
             $supplier = $r['supplier']['name'] ?? $r['supplier_name'] ?? '-';
-            $ref = $r['delivery_order_number'] ?? '-';
+            $poStr = !empty($r['po_number']) ? 'PO: ' . $r['po_number'] : '';
+            $sjStr = !empty($r['delivery_order_number']) ? 'SJ: ' . $r['delivery_order_number'] : '';
+            $ref = trim(implode(' | ', array_filter([$poStr, $sjStr]))) ?: '-';
             $receiver = $r['received_by']['name'] ?? '-';
 
             $items = $r['items'] ?? [];

@@ -15,13 +15,23 @@ class ItemController
 
     public function index(): void
     {
+        $perPageParam = $_GET['per_page'] ?? '25';
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+
         $params = [
-            'all' => 1,
             'search' => $_GET['search'] ?? '',
             'company_id' => $_GET['company_id'] ?? '',
             'category_id' => $_GET['category_id'] ?? '',
             'stock_status' => $_GET['stock_status'] ?? '',
         ];
+
+        if ($perPageParam === 'all' || (int)$perPageParam === -1) {
+            $params['all'] = 1;
+        } else {
+            $perPage = in_array((int)$perPageParam, [10, 25, 50, 100]) ? (int)$perPageParam : 25;
+            $params['per_page'] = $perPage;
+            $params['page'] = $page;
+        }
 
         $res = $this->api->get('items', array_filter($params, fn($v) => $v !== null && $v !== ''));
         $items = $res['data'] ?? [];
@@ -29,6 +39,151 @@ class ItemController
 
         $companies = $this->api->get('companies')['data'] ?? [];
         $categories = $this->api->get('categories')['data'] ?? [];
+        $units = $this->api->get('units')['data'] ?? [];
+
+        if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+            header('Content-Type: application/json; charset=utf-8');
+            ob_start();
+            if (empty($items)) {
+                ?>
+                <tr id="emptyDbRow"><td colspan="7" class="text-center text-muted" style="padding: 2.5rem;">
+                  <i class="bi bi-search" style="font-size: 1.5rem; display: block; margin: 0 auto 0.5rem; color: #94a3b8;"></i>
+                  Tidak ada barang yang cocok dengan kata kunci pencarian atau filter yang dipilih.
+                </td></tr>
+                <?php
+            } else {
+                foreach ($items as $item) {
+                    $itemJson = htmlspecialchars(json_encode([
+                        'id' => $item['id'],
+                        'item_code' => $item['item_code'],
+                        'name' => $item['name'],
+                        'company_code' => $item['company']['code'] ?? 'N/A',
+                        'total_stock' => $item['total_stock'],
+                        'unit' => $item['unit']['code'] ?? '',
+                        'purchase_price' => $item['purchase_price'] ?? 0,
+                        'category_id' => $item['category_id'] ?? ($item['category']['id'] ?? ''),
+                        'unit_id' => $item['unit_id'] ?? ($item['unit']['id'] ?? ''),
+                        'minimum_stock' => $item['minimum_stock'] ?? 0,
+                        'specification' => $item['specification'] ?? '',
+                        'description' => $item['description'] ?? '',
+                    ]), ENT_QUOTES, 'UTF-8');
+                    ?>
+                    <tr class="item-row">
+                      <td>
+                        <span class="badge badge-primary me-1" style="font-size: 0.75rem;">
+                          <?= htmlspecialchars($item['company']['code'] ?? 'N/A') ?>
+                        </span>
+                        <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
+                          <?= htmlspecialchars($item['item_code']) ?>
+                        </span>
+                      </td>
+                      <td>
+                        <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="fw-bold">
+                          <?= htmlspecialchars($item['name']) ?>
+                        </a>
+                        <?php if (!empty($item['specification'])): ?>
+                          <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($item['specification']) ?></div>
+                        <?php endif; ?>
+                      </td>
+                      <td style="font-family: monospace;">
+                        <?php if ((float)($item['purchase_price'] ?? 0) > 0): ?>
+                          <span class="fw-bold" style="color: #0284c7; font-size: 0.88rem;">
+                            <?= formatRupiah($item['purchase_price']) ?>
+                          </span>
+                        <?php else: ?>
+                          <span class="text-muted" style="font-size: 0.8rem; font-style: italic;">-</span>
+                        <?php endif; ?>
+                      </td>
+                      <td>
+                        <?= htmlspecialchars($item['category']['name'] ?? '-') ?>
+                      </td>
+                      <td class="fw-bold" style="font-size: 1rem;">
+                        <?= formatQty($item['total_stock'], $item['unit']['code'] ?? '') ?>
+                      </td>
+                      <td><?= renderBadge($item['stock_status']) ?></td>
+                      <td class="text-right" style="white-space: nowrap;">
+                        <?php if (isPurchasing()): ?>
+                          <button type="button" class="btn btn-outline btn-sm btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" style="color: #0284c7; border-color: #0284c7; margin-right: 4px;" title="Input / Edit Harga">
+                            <i class="bi bi-tag me-1"></i>Input Harga
+                          </button>
+                        <?php endif; ?>
+                        <?php if (canEditItem()): ?>
+                          <button type="button" class="btn btn-outline btn-sm btn-edit-item" onclick="openEditItemModal(<?= $itemJson ?>)" style="color: #475569; border-color: #cbd5e1; margin-right: 4px;" title="Edit Isi Barang">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                          </button>
+                        <?php endif; ?>
+                        <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="btn btn-outline btn-sm">
+                          <i class="bi bi-eye me-1"></i>Detail
+                        </a>
+                      </td>
+                    </tr>
+                    <?php
+                }
+            }
+            $rowsHtml = ob_get_clean();
+
+            $cur = (int) ($meta['current_page'] ?? 1);
+            $last = (int) ($meta['last_page'] ?? 1);
+            $total = (int) ($meta['total'] ?? count($items));
+            $perPageVal = $perPageParam;
+            $perPageNum = (int) ($meta['per_page'] ?? ($perPageVal !== 'all' ? (int)$perPageVal : $total));
+            $from = ($total > 0 && $perPageVal !== 'all') ? (($cur - 1) * $perPageNum + 1) : ($total > 0 ? 1 : 0);
+            $to = ($perPageVal !== 'all') ? min($total, $cur * $perPageNum) : $total;
+
+            ob_start();
+            if ($perPageVal === 'all') {
+                echo 'Menampilkan seluruh <strong>' . number_format($total, 0, ',', '.') . '</strong> data barang.';
+            } else {
+                echo 'Menampilkan baris <strong>' . number_format($from, 0, ',', '.') . '</strong> - <strong>' . number_format($to, 0, ',', '.') . '</strong> dari total <strong>' . number_format($total, 0, ',', '.') . '</strong> data barang (Halaman <strong>' . $cur . '</strong> dari <strong>' . $last . '</strong>)';
+            }
+            $summaryHtml = ob_get_clean();
+
+            ob_start();
+            if ($last > 1 && $perPageVal !== 'all') {
+                ?>
+                <div class="pagination" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                  <?php if ($cur > 1): ?>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="1" style="padding: 4px 8px;" title="Halaman Pertama">&laquo;</button>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $cur - 1 ?>" style="padding: 4px 8px;" title="Sebelumnya">&lsaquo;</button>
+                  <?php endif; ?>
+
+                  <?php
+                    $startPage = max(1, $cur - 2);
+                    $endPage = min($last, $cur + 2);
+                    if ($startPage > 1) {
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="1" style="padding: 4px 10px;">1</button>';
+                      if ($startPage > 2) echo '<span class="text-muted" style="padding: 0 4px;">...</span>';
+                    }
+                    for ($p = $startPage; $p <= $endPage; $p++) {
+                      $activeStyle = ($p == $cur) ? 'background-color: var(--primary); color: #fff; border-color: var(--primary); font-weight: bold;' : '';
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="' . $p . '" style="padding: 4px 10px; ' . $activeStyle . '">' . $p . '</button>';
+                    }
+                    if ($endPage < $last) {
+                      if ($endPage < $last - 1) echo '<span class="text-muted" style="padding: 0 4px;">...</span>';
+                      echo '<button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="' . $last . '" style="padding: 4px 10px;">' . $last . '</button>';
+                    }
+                  ?>
+
+                  <?php if ($cur < $last): ?>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $cur + 1 ?>" style="padding: 4px 8px;" title="Selanjutnya">&rsaquo;</button>
+                    <button type="button" class="btn btn-outline btn-sm pagination-btn" data-page="<?= $last ?>" style="padding: 4px 8px;" title="Halaman Terakhir">&raquo;</button>
+                  <?php endif; ?>
+                </div>
+                <?php
+            }
+            $paginationHtml = ob_get_clean();
+
+            echo json_encode([
+                'success' => true,
+                'rows_html' => $rowsHtml,
+                'summary_html' => $summaryHtml,
+                'pagination_html' => $paginationHtml,
+                'total' => $total,
+                'current_page' => $cur,
+                'last_page' => $last,
+            ]);
+            exit;
+        }
 
         include __DIR__ . '/../views/items/index.php';
     }
@@ -107,6 +262,75 @@ class ItemController
 
         $item = $res['data'];
         include __DIR__ . '/../views/items/show.php';
+    }
+
+    public function updatePurchasing(): void
+    {
+        if (!isPurchasing()) {
+            redirect('items', 'Akses ditolak: Hanya role Purchasing yang berhak menginput atau mengubah harga barang.', 'danger');
+        }
+
+        $id = (int) ($_POST['item_id'] ?? 0);
+        if (!$id) {
+            redirect('items');
+        }
+
+        $purchasePrice = isset($_POST['purchase_price']) 
+            ? (float) str_replace(',', '.', trim((string) $_POST['purchase_price'])) 
+            : 0.0;
+        $notes = trim($_POST['notes'] ?? '');
+
+        $payload = [
+            'purchase_price' => max(0, $purchasePrice),
+            'notes' => $notes ?: null,
+        ];
+
+        $res = $this->api->put("items/{$id}/purchasing", $payload);
+
+        $returnUrl = !empty($_POST['return_to']) && $_POST['return_to'] === 'show' 
+            ? "items/show&id={$id}" 
+            : 'items';
+
+        if (!empty($res['success'])) {
+            redirect($returnUrl, 'Harga barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui!');
+        } else {
+            $msg = $res['message'] ?? 'Gagal memperbarui harga barang.';
+            redirect($returnUrl, $msg, 'danger');
+        }
+    }
+
+    public function update(): void
+    {
+        if (!canEditItem()) {
+            redirect('items', 'Akses ditolak: Anda tidak memiliki izin mengedit data barang.', 'danger');
+        }
+
+        $id = (int) ($_POST['item_id'] ?? 0);
+        if (!$id) {
+            redirect('items');
+        }
+
+        $payload = [
+            'name' => trim($_POST['name'] ?? ''),
+            'category_id' => !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null,
+            'unit_id' => !empty($_POST['unit_id']) ? (int)$_POST['unit_id'] : null,
+            'minimum_stock' => (float) str_replace(',', '.', (string) ($_POST['minimum_stock'] ?? 0)),
+            'specification' => trim($_POST['specification'] ?? '') ?: null,
+            'description' => trim($_POST['description'] ?? '') ?: null,
+        ];
+
+        $res = $this->api->put("items/{$id}", $payload);
+
+        $returnUrl = !empty($_POST['return_to']) && $_POST['return_to'] === 'show' 
+            ? "items/show&id={$id}" 
+            : 'items';
+
+        if (!empty($res['success'])) {
+            redirect($returnUrl, 'Data barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui!');
+        } else {
+            $msg = $res['message'] ?? 'Gagal memperbarui data barang.';
+            redirect($returnUrl, $msg, 'danger');
+        }
     }
 
     public function checkDuplicateAjax(): void

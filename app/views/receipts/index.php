@@ -26,7 +26,7 @@ include __DIR__ . '/../layout/header.php';
     <form method="GET" action="<?= url('receipts') ?>" class="filter-bar">
       <input type="hidden" name="r" value="receipts">
       <div style="flex: 2;">
-        <input type="text" name="search" class="form-control" placeholder="Cari no penerimaan, supplier..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+        <input type="text" name="search" class="form-control" placeholder="Cari no penerimaan, no PO, supplier..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
       </div>
       <div style="flex: 1;">
         <select name="company_id" class="form-select">
@@ -72,8 +72,18 @@ include __DIR__ . '/../layout/header.php';
                 <td><?= htmlspecialchars($gr['supplier']['name'] ?? $gr['supplier_name'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($gr['received_by']['name'] ?? '-') ?></td>
                 <td><span class="badge badge-secondary"><?= $gr['items_count'] ?? count($gr['items'] ?? []) ?> Item</span></td>
-                <td class="text-right">
-                  <a href="<?= url('receipts/show') ?>&id=<?= $gr['id'] ?>" class="btn btn-outline btn-sm">Lihat Detail</a>
+                <td class="text-right" style="white-space: nowrap;">
+                  <a href="<?= url('receipts/show') ?>&id=<?= $gr['id'] ?>" class="btn btn-outline btn-sm">Lihat</a>
+                  <?php if (canManageMaster()): ?>
+                    <a href="<?= url('receipts/edit') ?>&id=<?= $gr['id'] ?>" class="btn btn-sm btn-outline" title="Koreksi Barang Masuk">
+                      <i class="bi bi-pencil-square"></i>
+                    </a>
+                  <?php endif; ?>
+                  <?php if (canManagePurchasing()): ?>
+                    <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $gr['id'] ?>" class="btn btn-sm btn-primary" style="background-color: #0284c7; border-color: #0284c7;" title="Input / Edit No. PO & Harga">
+                      <i class="bi bi-tag-fill me-1"></i>PO & Harga
+                    </a>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>
