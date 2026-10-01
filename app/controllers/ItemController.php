@@ -64,6 +64,7 @@ class ItemController
                         'category_id' => $item['category_id'] ?? ($item['category']['id'] ?? ''),
                         'unit_id' => $item['unit_id'] ?? ($item['unit']['id'] ?? ''),
                         'minimum_stock' => $item['minimum_stock'] ?? 0,
+                        'po_number' => $item['po_number'] ?? '',
                         'specification' => $item['specification'] ?? '',
                         'description' => $item['description'] ?? '',
                     ]), ENT_QUOTES, 'UTF-8');
@@ -93,6 +94,11 @@ class ItemController
                         <?php else: ?>
                           <span class="text-muted" style="font-size: 0.8rem; font-style: italic;">-</span>
                         <?php endif; ?>
+                        <?php if (!empty($item['po_number'])): ?>
+                          <div style="font-size: 0.75rem; color: #475569; margin-top: 2px;">
+                            <i class="bi bi-receipt me-1 text-muted"></i><?= htmlspecialchars($item['po_number']) ?>
+                          </div>
+                        <?php endif; ?>
                       </td>
                       <td>
                         <?= htmlspecialchars($item['category']['name'] ?? '-') ?>
@@ -102,19 +108,21 @@ class ItemController
                       </td>
                       <td><?= renderBadge($item['stock_status']) ?></td>
                       <td class="text-right" style="white-space: nowrap;">
-                        <?php if (isPurchasing()): ?>
-                          <button type="button" class="btn btn-outline btn-sm btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" style="color: #0284c7; border-color: #0284c7; margin-right: 4px;" title="Input / Edit Harga">
-                            <i class="bi bi-tag me-1"></i>Input Harga
-                          </button>
-                        <?php endif; ?>
-                        <?php if (canEditItem()): ?>
-                          <button type="button" class="btn btn-outline btn-sm btn-edit-item" onclick="openEditItemModal(<?= $itemJson ?>)" style="color: #475569; border-color: #cbd5e1; margin-right: 4px;" title="Edit Isi Barang">
-                            <i class="bi bi-pencil me-1"></i>Edit
-                          </button>
-                        <?php endif; ?>
-                        <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="btn btn-outline btn-sm">
-                          <i class="bi bi-eye me-1"></i>Detail
-                        </a>
+                        <div class="action-buttons">
+                          <?php if (isPurchasing()): ?>
+                            <button type="button" class="btn-action-price btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" title="Input / Edit No. PO & Harga">
+                              <i class="bi bi-tag me-1"></i>No. PO & Harga
+                            </button>
+                          <?php endif; ?>
+                          <?php if (canEditItem()): ?>
+                            <button type="button" class="btn-action-edit btn-edit-item" data-item="<?= $itemJson ?>" onclick="openEditItemModal(this)" title="Edit Isi Barang">
+                              <i class="bi bi-pencil me-1"></i>Edit
+                            </button>
+                          <?php endif; ?>
+                          <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="btn-action-view" title="Lihat Detail Barang">
+                            <i class="bi bi-eye me-1"></i>Detail
+                          </a>
+                        </div>
                       </td>
                     </tr>
                     <?php
@@ -261,13 +269,16 @@ class ItemController
         }
 
         $item = $res['data'];
+        $categories = $this->api->get('categories')['data'] ?? [];
+        $units = $this->api->get('units')['data'] ?? [];
+
         include __DIR__ . '/../views/items/show.php';
     }
 
     public function updatePurchasing(): void
     {
         if (!isPurchasing()) {
-            redirect('items', 'Akses ditolak: Hanya role Purchasing yang berhak menginput atau mengubah harga barang.', 'danger');
+            redirect('items', 'Akses ditolak: Hanya role Purchasing yang berhak menginput atau mengubah data PO dan harga barang.', 'danger');
         }
 
         $id = (int) ($_POST['item_id'] ?? 0);
@@ -278,10 +289,12 @@ class ItemController
         $purchasePrice = isset($_POST['purchase_price']) 
             ? (float) str_replace(',', '.', trim((string) $_POST['purchase_price'])) 
             : 0.0;
+        $poNumber = trim($_POST['po_number'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
 
         $payload = [
             'purchase_price' => max(0, $purchasePrice),
+            'po_number' => $poNumber ?: null,
             'notes' => $notes ?: null,
         ];
 
@@ -292,9 +305,9 @@ class ItemController
             : 'items';
 
         if (!empty($res['success'])) {
-            redirect($returnUrl, 'Harga barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui!');
+            redirect($returnUrl, 'Data purchasing (No. PO & Harga) barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui tanpa menggeser antrean FIFO.');
         } else {
-            $msg = $res['message'] ?? 'Gagal memperbarui harga barang.';
+            $msg = $res['message'] ?? 'Gagal memperbarui data purchasing barang.';
             redirect($returnUrl, $msg, 'danger');
         }
     }

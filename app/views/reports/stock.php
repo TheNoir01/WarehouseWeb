@@ -33,7 +33,7 @@ include __DIR__ . '/../layout/header.php';
 
       <div style="min-width: 180px;">
         <select name="company_id" id="filterStockCompany" class="form-select" onchange="this.form.submit()">
-          <option value="">-- Semua PT Pemilik --</option>
+          <option value="">Semua PT Pemilik</option>
           <?php foreach ($companies as $comp): ?>
             <option value="<?= $comp['id'] ?>" <?= ($_GET['company_id'] ?? '') == $comp['id'] ? 'selected' : '' ?>>
               <?= htmlspecialchars($comp['code'] . ' - ' . $comp['name']) ?>
@@ -93,7 +93,7 @@ include __DIR__ . '/../layout/header.php';
               <?php
                 $item = $b['item'] ?? [];
                 $stock = (float) ($b['qty'] ?? 0);
-                $min = (float) ($item['minimum_stock'] ?? 0);
+                $min = (float) ($item['category']['minimum_stock'] ?? $item['category_minimum_stock'] ?? $item['minimum_stock'] ?? 0);
                 $stockStatus = $b['stock_status'] ?? ($stock <= 0 ? 'HABIS' : (($min > 0 && $stock <= $min) ? 'MENIPIS' : 'TERSEDIA'));
               ?>
               <tr>
@@ -107,9 +107,6 @@ include __DIR__ . '/../layout/header.php';
                   <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?? '' ?>" class="fw-bold" style="color: #1e40af; text-decoration: none;">
                     <?= htmlspecialchars($item['name'] ?? '-') ?>
                   </a>
-                  <?php if (!empty($item['specification'])): ?>
-                    <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($item['specification']) ?></div>
-                  <?php endif; ?>
                 </td>
                 <td><?= htmlspecialchars($item['category']['name'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($item['unit']['code'] ?? '-') ?></td>

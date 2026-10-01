@@ -84,7 +84,7 @@ include __DIR__ . '/../layout/header.php';
         <div class="form-group">
           <label for="category_id">Kategori</label>
           <select name="category_id" id="category_id" class="form-select">
-            <option value="">-- Pilih Kategori yang Ada --</option>
+            <option value="">Pilih Kategori yang Ada</option>
             <?php foreach ($categories as $cat): ?>
               <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
             <?php endforeach; ?>
@@ -97,7 +97,7 @@ include __DIR__ . '/../layout/header.php';
         <div class="form-group">
           <label for="unit_id">Satuan Ukuran <span class="text-danger">*</span></label>
           <select name="unit_id" id="unit_id" class="form-select">
-            <option value="">-- Pilih Satuan --</option>
+            <option value="">Pilih Satuan</option>
             <?php foreach ($units as $unit): ?>
               <option value="<?= $unit['id'] ?>"><?= htmlspecialchars($unit['code'] . ' (' . $unit['name'] . ')') ?></option>
             <?php endforeach; ?>
@@ -108,22 +108,17 @@ include __DIR__ . '/../layout/header.php';
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="minimum_stock">Batas Minimum Stok</label>
-          <input type="number" step="any" min="0" id="minimum_stock" name="minimum_stock" class="form-control" value="0">
-        </div>
+      <input type="hidden" name="minimum_stock" value="0">
 
-        <div class="form-group">
-          <label for="generate_qr">Identifikasi QR Code</label>
-          <div style="margin-top: 0.5rem;">
-            <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--primary);">
-              <input type="checkbox" name="generate_qr" value="1" checked> 
-              <i class="bi bi-qr-code"></i> Generate Token QR Sistem Otomatis
-            </label>
-          </div>
-          <small class="text-muted">Sistem akan membuatkan QR Code unik yang langsung siap dicetak stiker dan di-scan oleh scanner 2D / HP.</small>
+      <div class="form-group">
+        <label for="generate_qr">Identifikasi QR Code</label>
+        <div style="margin-top: 0.25rem;">
+          <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--primary); cursor: pointer;">
+            <input type="checkbox" name="generate_qr" value="1" checked> 
+            <i class="bi bi-qr-code"></i> Generate Token QR Sistem Otomatis
+          </label>
         </div>
+        <small class="text-muted">Sistem akan membuatkan QR Code unik yang langsung siap dicetak stiker dan di-scan oleh scanner 2D / HP.</small>
       </div>
 
       <div class="form-group">

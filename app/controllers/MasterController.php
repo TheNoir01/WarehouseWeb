@@ -22,26 +22,32 @@ class MasterController
 
     public function categoriesStore(): void
     {
+        $minStock = isset($_POST['minimum_stock']) ? (float) str_replace(',', '.', trim((string) $_POST['minimum_stock'])) : 0.0;
         $res = $this->api->post('categories', [
             'name' => trim($_POST['name'] ?? ''),
+            'minimum_stock' => max(0, $minStock),
         ]);
         if (!empty($res['success'])) {
             redirect('masters/categories', 'Kategori berhasil ditambahkan.');
         } else {
-            redirect('masters/categories', $res['message'] ?? 'Gagal menambahkan kategori.', 'danger');
+            $msg = is_array($res['message'] ?? null) ? implode(' ', $res['message']) : ($res['message'] ?? 'Gagal menambahkan kategori.');
+            redirect('masters/categories', $msg, 'danger');
         }
     }
 
     public function categoriesUpdate(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
+        $minStock = isset($_POST['minimum_stock']) ? (float) str_replace(',', '.', trim((string) $_POST['minimum_stock'])) : 0.0;
         $res = $this->api->put("categories/{$id}", [
             'name' => trim($_POST['name'] ?? ''),
+            'minimum_stock' => max(0, $minStock),
         ]);
         if (!empty($res['success'])) {
             redirect('masters/categories', 'Kategori berhasil diperbarui.');
         } else {
-            redirect('masters/categories', $res['message'] ?? 'Gagal memperbarui kategori.', 'danger');
+            $msg = is_array($res['message'] ?? null) ? implode(' ', $res['message']) : ($res['message'] ?? 'Gagal memperbarui kategori.');
+            redirect('masters/categories', $msg, 'danger');
         }
     }
 

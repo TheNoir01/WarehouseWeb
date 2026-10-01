@@ -54,7 +54,7 @@ include __DIR__ . '/../layout/header.php';
             <th>Estimasi Luas / Berat</th>
             <th>Lokasi Simpan</th>
             <th>Status</th>
-            <th class="text-right">Aksi</th>
+            <th class="text-right" style="white-space: nowrap; width: 1%;">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -98,8 +98,12 @@ include __DIR__ . '/../layout/header.php';
                     <?= strtoupper($rem['status'] ?? 'available') ?>
                   </span>
                 </td>
-                <td class="text-right">
-                  <a href="<?= url('remnants/show') ?>&id=<?= $rem['id'] ?>" class="btn btn-outline btn-sm">Trace Sisa</a>
+                <td class="text-right" style="white-space: nowrap;">
+                  <div class="action-buttons">
+                    <a href="<?= url('remnants/show') ?>&id=<?= $rem['id'] ?>" class="btn-action-view" title="Lihat Pelacakan Sisa Material">
+                      <i class="bi bi-eye me-1"></i>Detail
+                    </a>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>

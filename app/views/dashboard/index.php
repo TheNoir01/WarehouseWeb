@@ -154,7 +154,6 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
                 <td><span class="badge badge-secondary"><?= htmlspecialchars($mov['company']['code'] ?? '-') ?></span></td>
                 <td>
                   <div class="fw-bold"><?= htmlspecialchars($mov['item']['name'] ?? '-') ?></div>
-                  <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($mov['location']['code'] ?? '') ?></div>
                 </td>
                 <td><?= renderBadge($mov['movement_type']) ?></td>
                 <td class="fw-bold <?= (float)$mov['qty'] > 0 ? 'text-success' : 'text-danger' ?>">

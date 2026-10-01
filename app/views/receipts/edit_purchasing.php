@@ -19,15 +19,6 @@ include __DIR__ . '/../layout/header.php';
     </a>
   </div>
 </div>
-
-<!-- FIFO Protection Alert -->
-<div class="alert alert-info d-flex align-center gap-1 mb-2" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px; padding: 0.9rem 1.2rem;">
-  <i class="bi bi-shield-lock-fill" style="font-size: 1.5rem; color: #2563eb; flex-shrink: 0;"></i>
-  <div style="font-size: 0.875rem;">
-    <strong>Perlindungan Integritas FIFO:</strong> Tanggal penerimaan barang (<strong><?= formatDate($receipt['received_date']) ?></strong>) dan batch inventori dikunci secara permanen. Pengubahan nomor PO dan harga barang <em>sama sekali tidak akan mengubah</em> tanggal masuk maupun urutan FIFO pengeluaran stok di gudang.
-  </div>
-</div>
-
 <form method="POST" action="<?= url('receipts/update-purchasing') ?>" id="purchasingForm">
   <input type="hidden" name="receipt_id" value="<?= $receipt['id'] ?>">
 
@@ -140,10 +131,10 @@ include __DIR__ . '/../layout/header.php';
           </tbody>
           <tfoot>
             <tr style="background: #f8fafc; border-top: 2px solid var(--border);">
-              <td colspan="5" class="text-right fw-bold" style="font-size: 1rem; vertical-align: middle;">
+              <td colspan="5" class="text-right fw-bold" style="font-size: 1rem; vertical-align: middle; white-space: nowrap; padding: 0.75rem 1rem;">
                 Grand Total Pembelian:
               </td>
-              <td colspan="2" class="text-right fw-bold" style="font-family: monospace; font-size: 1.2rem; color: #0284c7; vertical-align: middle;">
+              <td colspan="2" class="text-right fw-bold" style="font-family: monospace; font-size: 1.2rem; color: #0284c7; vertical-align: middle; white-space: nowrap; padding: 0.75rem 1rem;">
                 <span id="grandTotalDisplay"><?= formatRupiah($initialGrandTotal) ?></span>
               </td>
             </tr>
@@ -151,17 +142,139 @@ include __DIR__ . '/../layout/header.php';
         </table>
       </div>
     </div>
-  </div>
-
-  <div class="d-flex justify-between align-center mt-3 mb-4">
-    <a href="<?= url('receipts/show') ?>&id=<?= $receipt['id'] ?>" class="btn btn-secondary">
-      <i class="bi bi-x-circle me-1"></i> Batal
-    </a>
-    <button type="submit" class="btn btn-primary" style="background-color: #0284c7; border-color: #0284c7; padding: 0.6rem 1.5rem; font-weight: 600; font-size: 1rem;">
-      <i class="bi bi-check2-circle me-1"></i> Simpan Nomor PO & Harga
-    </button>
+    <!-- Form Action Footer -->
+    <div class="card-footer d-flex justify-between align-center" style="background: #f8fafc; border-top: 1px solid var(--border); padding: 0.85rem 1.25rem; border-radius: 0 0 8px 8px;">
+      <a href="<?= url('receipts/show') ?>&id=<?= $receipt['id'] ?>" class="btn btn-secondary">
+        <i class="bi bi-x-circle me-1"></i> Batal
+      </a>
+      <button type="submit" class="btn btn-primary" style="background-color: #0284c7; border-color: #0284c7; padding: 0.55rem 1.4rem; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);">
+        <i class="bi bi-check2-circle me-1"></i> Simpan Nomor PO & Harga
+      </button>
+    </div>
   </div>
 </form>
+
+<!-- Histori Perubahan No. PO & Harga (Purchasing) -->
+<div class="card mt-4 mb-4">
+  <div class="card-header d-flex justify-between align-center">
+    <span style="font-weight: 700; color: #0f172a;">
+      <i class="bi bi-clock-history me-1 text-primary"></i> Riwayat Perubahan Sebelumnya Pada Dokumen Ini
+    </span>
+    <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 600; border: 1px solid #bae6fd;">
+      <?= count($receipt['purchasing_logs'] ?? []) ?> Catatan Riwayat
+    </span>
+  </div>
+  <div class="card-body" style="padding: <?= empty($receipt['purchasing_logs']) ? '1.5rem' : '0' ?>;">
+    <?php if (empty($receipt['purchasing_logs'])): ?>
+      <div class="text-center text-muted" style="font-size: 0.88rem;">
+        <i class="bi bi-clock-history" style="font-size: 1.5rem; color: #cbd5e1; display: block; margin-bottom: 0.35rem;"></i>
+        Belum pernah ada riwayat perubahan No. PO atau harga pada dokumen penerimaan ini.
+      </div>
+    <?php else: ?>
+      <div class="table-responsive">
+        <table class="table" style="vertical-align: middle; margin-bottom: 0;">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="width: 18%;">Waktu & Tanggal</th>
+              <th style="width: 25%;">Perubahan No. PO</th>
+              <th style="width: 37%;">Perubahan Harga Item</th>
+              <th style="width: 20%;">Petugas Purchasing</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($receipt['purchasing_logs'] as $pLog): ?>
+              <?php
+                $pDate = !empty($pLog['created_at']) ? date('d/m/Y H:i', strtotime($pLog['created_at'])) . ' WIB' : '-';
+                $pUser = $pLog['user']['name'] ?? ($pLog['user']['username'] ?? 'Purchasing');
+                $oldVals = $pLog['old_values'] ?? [];
+                $newVals = $pLog['new_values'] ?? [];
+                $oldPo = $oldVals['po_number'] ?? null;
+                $newPo = $newVals['po_number'] ?? null;
+                $oldItems = $oldVals['items'] ?? [];
+                $newItems = $newVals['items'] ?? [];
+              ?>
+              <tr>
+                <td>
+                  <div style="font-weight: 600; font-size: 0.85rem; color: #334155;"><?= $pDate ?></div>
+                  <?php if (!empty($pLog['ip_address'])): ?>
+                    <div class="text-muted" style="font-size: 0.72rem;">IP: <?= htmlspecialchars($pLog['ip_address']) ?></div>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if ($oldPo !== $newPo): ?>
+                    <div style="font-size: 0.8rem; margin-bottom: 3px;">
+                      <span class="text-muted" style="font-size: 0.72rem;">Lama:</span>
+                      <?php if (!empty($oldPo)): ?>
+                        <span style="font-family: monospace; text-decoration: line-through; color: #dc2626; font-weight: 600;"><?= htmlspecialchars($oldPo) ?></span>
+                      <?php else: ?>
+                        <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 0.7rem;">(Belum ada PO)</span>
+                      <?php endif; ?>
+                    </div>
+                    <div>
+                      <span class="text-muted" style="font-size: 0.72rem;">Baru:</span>
+                      <?php if (!empty($newPo)): ?>
+                        <span style="font-family: monospace; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd;">
+                          <i class="bi bi-file-earmark-check me-1"></i><?= htmlspecialchars($newPo) ?>
+                        </span>
+                      <?php else: ?>
+                        <span class="text-muted" style="font-style: italic;">(Dikosongkan)</span>
+                      <?php endif; ?>
+                    </div>
+                  <?php else: ?>
+                    <span style="font-family: monospace; font-size: 0.85rem; color: #475569;"><?= htmlspecialchars($newPo ?? '-') ?></span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if (!empty($newItems)): ?>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <?php foreach ($newItems as $iKey => $nItem): ?>
+                        <?php 
+                          $oItem = $oldItems[$iKey] ?? null;
+                          $oldUPrice = (float)($oItem['unit_price'] ?? 0);
+                          $newUPrice = (float)($nItem['unit_price'] ?? 0);
+                          $diff = $newUPrice - $oldUPrice;
+                        ?>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 0.78rem;">
+                          <div class="fw-bold" style="color: #1e293b; margin-bottom: 2px;">
+                            <?= htmlspecialchars($nItem['item_name'] ?? 'Item') ?>
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <span style="text-decoration: line-through; color: #94a3b8; font-family: monospace;">
+                              <?= formatRupiah($oldUPrice) ?>
+                            </span>
+                            <i class="bi bi-arrow-right text-muted" style="font-size: 0.75rem;"></i>
+                            <span style="font-weight: 700; color: #0284c7; font-family: monospace;">
+                              <?= formatRupiah($newUPrice) ?>
+                            </span>
+                            <?php if ($diff > 0): ?>
+                              <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.68rem; padding: 1px 5px;">
+                                +<?= formatRupiah($diff) ?>
+                              </span>
+                            <?php elseif ($diff < 0): ?>
+                              <span class="badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 0.68rem; padding: 1px 5px;">
+                                -<?= formatRupiah(abs($diff)) ?>
+                              </span>
+                            <?php endif; ?>
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php else: ?>
+                    <span class="text-muted" style="font-size: 0.8rem;">(Tidak ada perubahan harga item)</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem;"><?= htmlspecialchars($pUser) ?></div>
+                  <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.68rem;">Purchasing</span>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
+  </div>
+</div>
 
 <script>
 function formatRupiahJs(number) {

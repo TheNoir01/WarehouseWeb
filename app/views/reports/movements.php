@@ -33,7 +33,7 @@ include __DIR__ . '/../layout/header.php';
 
       <div style="min-width: 140px;">
         <select name="movement_type" class="form-select">
-          <option value="">-- Tipe Mutasi --</option>
+          <option value="">Tipe Mutasi</option>
           <option value="IN" <?= ($_GET['movement_type'] ?? '') === 'IN' ? 'selected' : '' ?>>MASUK</option>
           <option value="OUT" <?= ($_GET['movement_type'] ?? '') === 'OUT' ? 'selected' : '' ?>>KELUAR</option>
           <option value="RETURN" <?= ($_GET['movement_type'] ?? '') === 'RETURN' ? 'selected' : '' ?>>PENGEMBALIAN</option>

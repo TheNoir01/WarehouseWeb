@@ -103,15 +103,23 @@ function isPurchasing(): bool
 
 function canManagePurchasing(): bool
 {
-    return isPurchasing();
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['purchasing', 'admin']);
 }
 
 function canEditPrice(): bool
 {
-    return isPurchasing();
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['purchasing', 'admin']);
 }
 
 function canEditItem(): bool
+{
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);
+}
+
+function canViewQrCode(): bool
 {
     $role = currentUser()['role'] ?? '';
     return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);

@@ -2,13 +2,18 @@
 $currentRoute = $_GET['r'] ?? 'dashboard';
 $user = currentUser();
 ?>
-<aside class="sidebar">
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<aside class="sidebar" id="sidebarMenu">
   <div class="sidebar-header">
     <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
     <div>
       <div class="brand-name">GUDANG</div>
-      <div class="brand-sub">1 Fisik • Multi-Company</div>
+      <div class="brand-sub">Menu Pintasan</div>
     </div>
+    <button type="button" class="btn-close-sidebar" id="btnCloseSidebar" title="Tutup Menu Pintasan (Esc)" aria-label="Tutup Menu">
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
 
   <ul class="sidebar-menu">
@@ -17,6 +22,16 @@ $user = currentUser();
       <li class="<?= str_starts_with($currentRoute, 'items') ? 'active' : '' ?>">
         <a href="<?= url('items') ?>">
           <i class="bi bi-boxes"></i> <span>Daftar Barang</span>
+        </a>
+      </li>
+      <li class="<?= (str_starts_with($currentRoute, 'receipts') && !str_starts_with($currentRoute, 'receipts/purchasing-history')) ? 'active' : '' ?>">
+        <a href="<?= url('receipts') ?>">
+          <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
+        </a>
+      </li>
+      <li class="<?= (str_starts_with($currentRoute, 'receipts/purchasing-history') || str_starts_with($currentRoute, 'purchasing/history')) ? 'active' : '' ?>">
+        <a href="<?= url('receipts/purchasing-history') ?>">
+          <i class="bi bi-clock-history"></i> <span>Histori PO & Harga</span>
         </a>
       </li>
     <?php else: ?>
@@ -87,6 +102,12 @@ $user = currentUser();
       <li class="<?= $currentRoute === 'reports/movements' ? 'active' : '' ?>">
         <a href="<?= url('reports/movements') ?>">
           <i class="bi bi-clock-history"></i> <span>Mutasi Stok (Histori)</span>
+        </a>
+      </li>
+
+      <li class="<?= (str_starts_with($currentRoute, 'receipts/purchasing-history') || str_starts_with($currentRoute, 'purchasing/history')) ? 'active' : '' ?>">
+        <a href="<?= url('receipts/purchasing-history') ?>">
+          <i class="bi bi-tags-fill"></i> <span>Audit PO & Harga</span>
         </a>
       </li>
     <?php endif; ?>

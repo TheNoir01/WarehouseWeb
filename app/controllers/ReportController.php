@@ -55,7 +55,7 @@ class ReportController
                 foreach ($balances as $b) {
                     $item = $b['item'] ?? [];
                     $stock = (float) ($b['qty'] ?? 0);
-                    $min = (float) ($item['minimum_stock'] ?? 0);
+                    $min = (float) ($item['category']['minimum_stock'] ?? $item['category_minimum_stock'] ?? $item['minimum_stock'] ?? 0);
                     $stockStatus = $b['stock_status'] ?? ($stock <= 0 ? 'HABIS' : (($min > 0 && $stock <= $min) ? 'MENIPIS' : 'TERSEDIA'));
                     ?>
                     <tr>
@@ -207,7 +207,6 @@ class ReportController
 
         foreach ($balances as $b) {
             $rawDate = (string) ($b['updated_at'] ?? $b['created_at'] ?? date('Y-m-d'));
-            $date = substr($rawDate, 0, 10);
             $cCode = strtoupper($b['company']['code'] ?? 'KJG');
             if (!isset($allCompanies[$cCode])) {
                 $allCompanies[$cCode] = $b['company']['name'] ?? $cCode;
@@ -218,36 +217,141 @@ class ReportController
 
             $item = $b['item'] ?? [];
             $stock = (float) ($b['qty'] ?? 0);
-            $min = (float) ($item['minimum_stock'] ?? 0);
+            $min = (float) ($item['category']['minimum_stock'] ?? $item['category_minimum_stock'] ?? 0);
+            if ($min <= 0 && (float)($item['minimum_stock'] ?? 0) > 0) {
+                $min = (float) $item['minimum_stock'];
+            }
             $status = ($stock <= 0) ? 'HABIS' : (($min > 0 && $stock <= $min) ? 'MENIPIS' : 'TERSEDIA');
+
+            $cleanName = trim((string)($item['name'] ?? '-'));
+            $cleanName = trim(preg_replace('/\s*[-–]\s*Spesifikasi.*/i', '', $cleanName));
+
+            $supplier = trim((string)($item['suppliers_summary'] ?? ''));
+            if ($supplier === '-' || $supplier === '') {
+                $supplier = '';
+                $spec = (string)($item['specification'] ?? '');
+                $desc = (string)($item['description'] ?? '');
+                if (preg_match('/Supplier\s*:\s*([^|\n]+)/i', $spec, $m)) {
+                    $supplier = trim($m[1]);
+                } elseif (preg_match('/Supplier\s*:\s*([^|\n]+)/i', $desc, $m)) {
+                    $supplier = trim($m[1]);
+                }
+            }
+
+            if (preg_match('/\s*[-–(]\s*Supplier\s*:\s*([^)]+)\)?/i', $cleanName, $m)) {
+                if (empty($supplier)) {
+                    $supplier = trim($m[1]);
+                }
+                $cleanName = trim(preg_replace('/\s*[-–(]\s*Supplier\s*:\s*[^)]+\)?/i', '', $cleanName));
+            }
+
+            $price = (float)($item['purchase_price'] ?? 0);
+            $priceVal = ($price > 0) ? $price : '';
+
+            $poNumber = trim((string)($item['po_number'] ?? ''));
+
+            // Process goods receipts for this item in the current month
+            $itemReceipts = $b['goods_receipts'] ?? $item['goods_receipts'] ?? [];
+            $unit = strtoupper(trim((string)($item['unit']['code'] ?? $item['unit']['name'] ?? 'PCS')));
+            if ($unit === '' || $unit === '-') {
+                $unit = 'PCS';
+            }
+
+            $monthlyReceipts = array_filter($itemReceipts, function ($r) use ($currentYm) {
+                if (empty($r['received_date'])) return false;
+                return str_starts_with($r['received_date'], $currentYm);
+            });
+
+            $receiptsByDay = [];
+            $receiptSuppliers = [];
+            $receiptPos = [];
+
+            foreach ($monthlyReceipts as $r) {
+                $dayNum = (int) date('j', strtotime($r['received_date']));
+                if (!isset($receiptsByDay[$dayNum])) {
+                    $receiptsByDay[$dayNum] = [
+                        'day' => $dayNum,
+                        'qty' => 0,
+                        'count' => 0,
+                    ];
+                }
+                $receiptsByDay[$dayNum]['qty'] += (float) ($r['qty'] ?? 0);
+                $receiptsByDay[$dayNum]['count']++;
+
+                if (!empty($r['supplier_name']) && !in_array($r['supplier_name'], $receiptSuppliers, true)) {
+                    $receiptSuppliers[] = $r['supplier_name'];
+                }
+                if (!empty($r['po_number']) && !in_array($r['po_number'], $receiptPos, true)) {
+                    $receiptPos[] = $r['po_number'];
+                }
+            }
+            ksort($receiptsByDay);
+
+            if (empty($supplier) && !empty($receiptSuppliers)) {
+                $supplier = implode(', ', $receiptSuppliers);
+            }
+            if (empty($poNumber) && !empty($receiptPos)) {
+                $poNumber = implode(', ', $receiptPos);
+            }
+
+            $tanggalMasuk = '';
+            $keterangan = '-';
+
+            if (count($receiptsByDay) > 1) {
+                // Multi-date goods receipts in the same month:
+                // Tanggal format: tanggalnya saja (e.g. "5, 20")
+                $tanggalMasuk = implode(', ', array_keys($receiptsByDay));
+
+                // Keterangan: rincian barang masuk per tanggal
+                $parts = [];
+                foreach ($receiptsByDay as $d => $info) {
+                    $qFormatted = rtrim(rtrim(number_format($info['qty'], 2, '.', ''), '0'), '.');
+                    $parts[] = "tgl {$d} ({$qFormatted} {$unit})";
+                }
+                $keterangan = 'Masuk ' . implode(', ', $parts);
+            } elseif (count($receiptsByDay) === 1) {
+                // Exactly 1 receipt date in this month: format tanggalnya saja
+                $dayNum = key($receiptsByDay);
+                $tanggalMasuk = (int) $dayNum;
+                $keterangan = '-';
+            } else {
+                // No new goods receipt in this month, use initial/updated date day
+                $dayNum = (int) date('j', strtotime($rawDate));
+                $tanggalMasuk = ($dayNum > 0) ? (int) $dayNum : '-';
+                $keterangan = '-';
+            }
 
             $grouped[$currentYm][$cCode][] = [
                 'company' => $cCode,
                 'item_code' => $item['item_code'] ?? '-',
-                'item_name' => $item['name'] ?? '-',
                 'category' => $item['category']['name'] ?? '-',
+                'item_name' => $cleanName,
                 'unit' => $item['unit']['code'] ?? $item['unit']['name'] ?? '-',
+                'supplier' => $supplier,
+                'price' => $priceVal,
+                'po_number' => $poNumber,
                 'qty' => $stock,
                 'status' => $status,
-                'supplier' => $item['suppliers_summary'] ?? '-',
-                'last_updated' => $date,
+                'tanggal_masuk' => $tanggalMasuk,
+                'keterangan' => $keterangan,
             ];
         }
 
         $headers = [
             'No',
-            'PT Pemilik',
             'ID / Kode Barang',
-            'Nama Barang & Spesifikasi',
             'Kategori',
+            'Nama Barang',
             'Satuan',
+            'suppler',
+            'harga',
+            'no po',
             'Total Stok',
-            'Status',
-            'Keterangan Supplier',
-            'Terakhir Diperbarui',
+            'Tanggal Masuk',
+            'Keterangan',
         ];
 
-        $colWidths = [6, 14, 16, 36, 18, 12, 16, 14, 28, 18];
+        $colWidths = [6, 18, 18, 45, 10, 22, 16, 20, 14, 16, 35];
 
         $writer = new \App\Services\SimpleXlsxWriter();
 
@@ -269,30 +373,35 @@ class ReportController
 
                 if (empty($rowsData)) {
                     $sheetRows[] = [
-                        1,
-                        $cCode,
+                        ['v' => 1, 'align' => 'center'],
+                        '-',
                         '-',
                         'Tidak ada data saldo stok pada periode ini',
-                        '-',
-                        '-',
-                        0,
-                        '-',
-                        '-',
+                        ['v' => '-', 'align' => 'center'],
+                        '',
+                        '',
+                        '',
+                        ['v' => 0, 'status' => 'HABIS'],
+                        ['v' => '-', 'align' => 'center'],
                         '-',
                     ];
                 } else {
                     foreach ($rowsData as $row) {
                         $sheetRows[] = [
-                            $no++,
-                            $row['company'],
+                            ['v' => $no++, 'align' => 'center'],
                             $row['item_code'],
-                            $row['item_name'],
                             $row['category'],
-                            $row['unit'],
-                            $row['qty'],
-                            $row['status'],
+                            $row['item_name'],
+                            ['v' => $row['unit'], 'align' => 'center'],
                             $row['supplier'],
-                            $row['last_updated'],
+                            $row['price'],
+                            $row['po_number'],
+                            [
+                                'v' => $row['qty'],
+                                'status' => $row['status'],
+                            ],
+                            ['v' => $row['tanggal_masuk'], 'align' => 'center'],
+                            ['v' => $row['keterangan']],
                         ];
                     }
                 }

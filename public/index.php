@@ -66,11 +66,6 @@ if (!isAuthenticated()) {
     redirect('login', 'Silakan login terlebih dahulu untuk mengakses sistem.', 'warning');
 }
 
-// Purchasing role only has access to items
-if (isPurchasing() && ($route === 'dashboard' || $route === '')) {
-    redirect('items');
-}
-
 // Protected routes
 switch ($route) {
     case 'dashboard':
@@ -93,12 +88,6 @@ switch ($route) {
         break;
     case 'items/show':
         (new ItemController())->show();
-        break;
-    case 'items/update':
-        (new ItemController())->update();
-        break;
-    case 'items/update-purchasing':
-        (new ItemController())->updatePurchasing();
         break;
     case 'items/check-duplicate-ajax':
         (new ItemController())->checkDuplicateAjax();
@@ -123,17 +112,15 @@ switch ($route) {
     case 'receipts/show':
         (new GoodsReceiptController())->show();
         break;
-    case 'receipts/edit':
-        (new GoodsReceiptController())->edit();
-        break;
-    case 'receipts/update':
-        (new GoodsReceiptController())->update();
-        break;
     case 'receipts/edit-purchasing':
         (new GoodsReceiptController())->editPurchasing();
         break;
     case 'receipts/update-purchasing':
         (new GoodsReceiptController())->updatePurchasing();
+        break;
+    case 'receipts/purchasing-history':
+    case 'purchasing/history':
+        (new GoodsReceiptController())->purchasingHistory();
         break;
     case 'receipts/export-excel':
         (new GoodsReceiptController())->exportExcel();
@@ -284,12 +271,6 @@ switch ($route) {
             redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
         }
         (new UserController())->store();
-        break;
-    case 'users/update':
-        if (!canManageUsers()) {
-            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
-        }
-        (new UserController())->update();
         break;
 
     default:

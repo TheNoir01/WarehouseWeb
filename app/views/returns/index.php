@@ -44,7 +44,7 @@ include __DIR__ . '/../layout/header.php';
             <th>Nama Pengembali</th>
             <th>Petugas Penerima</th>
             <th>Jml Item</th>
-            <th class="text-right">Aksi</th>
+            <th class="text-right" style="white-space: nowrap; width: 1%;">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -68,8 +68,12 @@ include __DIR__ . '/../layout/header.php';
                 <td><?= htmlspecialchars($ret['returned_by_name']) ?></td>
                 <td><?= htmlspecialchars($ret['received_by']['name'] ?? '-') ?></td>
                 <td><span class="badge badge-secondary"><?= $ret['items_count'] ?? count($ret['items'] ?? []) ?> Item</span></td>
-                <td class="text-right">
-                  <a href="<?= url('returns/show') ?>&id=<?= $ret['id'] ?>" class="btn btn-outline btn-sm">Lihat Detail</a>
+                <td class="text-right" style="white-space: nowrap;">
+                  <div class="action-buttons">
+                    <a href="<?= url('returns/show') ?>&id=<?= $ret['id'] ?>" class="btn-action-view" title="Lihat Detail Pengembalian">
+                      <i class="bi bi-eye me-1"></i>Detail
+                    </a>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>

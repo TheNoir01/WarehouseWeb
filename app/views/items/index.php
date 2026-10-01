@@ -93,8 +93,8 @@ include __DIR__ . '/../layout/header.php';
             <th>Harga Beli</th>
             <th>Kategori</th>
             <th>Total Stok</th>
-            <th>Status</th>
-            <th class="text-right">Aksi</th>
+            <th >Status</th>
+            <th class="text-right" style="white-space: nowrap; width: 1%;"></th>
           </tr>
         </thead>
         <tbody id="itemsTableBody">
@@ -112,6 +112,7 @@ include __DIR__ . '/../layout/header.php';
                 $searchContent = strtolower(
                   ($item['item_code'] ?? '') . ' ' .
                   ($item['name'] ?? '') . ' ' .
+                  ($item['po_number'] ?? '') . ' ' .
                   ($item['specification'] ?? '') . ' ' .
                   ($item['category']['name'] ?? '') . ' ' .
                   ($item['company']['code'] ?? '') . ' ' .
@@ -125,9 +126,7 @@ include __DIR__ . '/../layout/header.php';
                   data-category="<?= htmlspecialchars($item['category_id'] ?? '') ?>"
                   data-status="<?= htmlspecialchars($item['stock_status'] ?? '') ?>">
                 <td>
-                  <span class="badge badge-primary me-1" style="font-size: 0.75rem;">
-                    <?= htmlspecialchars($item['company']['code'] ?? 'N/A') ?>
-                  </span>
+
                   <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
                     <?= htmlspecialchars($item['item_code']) ?>
                   </span>
@@ -136,9 +135,6 @@ include __DIR__ . '/../layout/header.php';
                   <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="fw-bold">
                     <?= htmlspecialchars($item['name']) ?>
                   </a>
-                  <?php if (!empty($item['specification'])): ?>
-                    <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($item['specification']) ?></div>
-                  <?php endif; ?>
                 </td>
                 <td style="font-family: monospace;">
                   <?php if ((float)($item['purchase_price'] ?? 0) > 0): ?>
@@ -166,6 +162,7 @@ include __DIR__ . '/../layout/header.php';
                         'total_stock' => $item['total_stock'],
                         'unit' => $item['unit']['code'] ?? '',
                         'purchase_price' => $item['purchase_price'] ?? 0,
+                        'po_number' => $item['po_number'] ?? '',
                         'category_id' => $item['category_id'] ?? ($item['category']['id'] ?? ''),
                         'unit_id' => $item['unit_id'] ?? ($item['unit']['id'] ?? ''),
                         'minimum_stock' => $item['minimum_stock'] ?? 0,
@@ -173,19 +170,16 @@ include __DIR__ . '/../layout/header.php';
                         'description' => $item['description'] ?? '',
                     ]), ENT_QUOTES, 'UTF-8');
                   ?>
-                  <?php if (isPurchasing()): ?>
-                    <button type="button" class="btn btn-outline btn-sm btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" style="color: #0284c7; border-color: #0284c7; margin-right: 4px;" title="Input / Edit Harga">
-                      <i class="bi bi-tag me-1"></i>Input Harga
-                    </button>
-                  <?php endif; ?>
-                  <?php if (canEditItem()): ?>
-                    <button type="button" class="btn btn-outline btn-sm btn-edit-item" onclick="openEditItemModal(<?= $itemJson ?>)" style="color: #475569; border-color: #cbd5e1; margin-right: 4px;" title="Edit Isi Barang">
-                      <i class="bi bi-pencil me-1"></i>Edit
-                    </button>
-                  <?php endif; ?>
-                  <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="btn btn-outline btn-sm">
-                    <i class="bi bi-eye me-1"></i>Detail
-                  </a>
+                  <div class="action-buttons">
+                    <?php if (canEditItem()): ?>
+                      <button type="button" class="btn-action-edit btn-edit-item" data-item="<?= $itemJson ?>" onclick="openEditItemModal(this)" title="Edit Isi Barang">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                      </button>
+                    <?php endif; ?>
+                    <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="btn-action-view" title="Lihat Detail Barang">
+                      <i class="bi bi-eye me-1"></i>Detail
+                    </a>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -251,6 +245,7 @@ include __DIR__ . '/../layout/header.php';
   </div>
 </div>
 
+ <?php if (canViewQrCode()): ?>
 <!-- Modal Quick QR Scan & Print -->
 <div class="modal-backdrop" id="modalQrScan">
   <div class="modal-dialog" style="max-width: 380px;">
@@ -299,7 +294,10 @@ function showQrModal(name, code, qrValue, ptCode) {
 
   openModal('modalQrScan');
 }
+</script>
+<?php endif; ?>
 
+<script>
 // ==========================================
 // REAL-TIME BACKEND LIVE SEARCH & PAGINATION
 // ==========================================
@@ -467,6 +465,8 @@ function openPurchasingModal(itemData) {
   document.getElementById('modalCompanyCode').innerText = itemData.company_code || '';
   document.getElementById('modalItemStock').innerText = 'Stok: ' + (itemData.total_stock || 0) + ' ' + (itemData.unit || '');
   document.getElementById('modalPurchasePrice').value = (itemData.purchase_price && itemData.purchase_price > 0) ? itemData.purchase_price : '';
+  const poEl = document.getElementById('modalPoNumber');
+  if (poEl) poEl.value = itemData.po_number || '';
   const notesEl = document.getElementById('modalPriceNotes');
   if (notesEl) notesEl.value = '';
   
@@ -474,7 +474,11 @@ function openPurchasingModal(itemData) {
   if (modal) {
     modal.style.display = 'flex';
     setTimeout(() => {
-      document.getElementById('modalPurchasePrice').focus();
+      if (poEl) {
+        poEl.focus();
+      } else {
+        document.getElementById('modalPurchasePrice').focus();
+      }
     }, 100);
   }
 }
@@ -484,15 +488,19 @@ function closePurchasingModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function clearPurchasingModalFields() {
-  if (confirm('Apakah Anda yakin ingin mengosongkan harga barang ini menjadi Rp 0?')) {
-    document.getElementById('modalPurchasePrice').value = '0';
-    document.getElementById('formPurchasingModal').submit();
-  }
-}
-
 // Edit Item Modal Functions (Khusus Role Kepala Gudang, Karyawan, Admin)
-function openEditItemModal(itemData) {
+function openEditItemModal(param) {
+  let itemData = param;
+  if (param instanceof HTMLElement || (param && param.dataset && param.dataset.item)) {
+    try {
+      itemData = typeof param.dataset.item === 'string' ? JSON.parse(param.dataset.item) : param.dataset.item;
+    } catch(e) {
+      console.error("Failed to parse item data:", e);
+      return;
+    }
+  }
+  if (!itemData) return;
+
   document.getElementById('editItemId').value = itemData.id || '';
   document.getElementById('editItemCodeText').innerText = itemData.item_code || '';
   document.getElementById('editCompanyCodeText').innerText = itemData.company_code || '';
@@ -518,79 +526,78 @@ function closeEditItemModal() {
 }
 </script>
 
-<?php if (isPurchasing()): ?>
-<!-- Modal Input / Edit Harga (Khusus Purchasing) -->
-<div id="purchasingModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-  <div style="background: #ffffff; border-radius: 12px; max-width: 520px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden;">
-    <div style="padding: 1.2rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-      <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
-        <i class="bi bi-tag-fill" style="color: #0284c7;"></i>
-        <span>Input / Edit Harga Barang (Purchasing)</span>
+  <?php if (isPurchasing()): ?>
+  <!-- Modal Input / Edit No. PO & Harga (Khusus Purchasing) -->
+  <div id="purchasingModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 520px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden;">
+      <div style="padding: 1.2rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="bi bi-receipt" style="color: #0284c7;"></i>
+          <span>Input / Edit No. PO & Harga Beli</span>
+        </div>
+        <button type="button" onclick="closePurchasingModal()" style="background: none; border: none; font-size: 1.5rem; line-height: 1; color: #94a3b8; cursor: pointer;">&times;</button>
       </div>
-      <button type="button" onclick="closePurchasingModal()" style="background: none; border: none; font-size: 1.5rem; line-height: 1; color: #94a3b8; cursor: pointer;">&times;</button>
+
+      <form method="POST" action="<?= url('items/update-purchasing') ?>" id="formPurchasingModal">
+        <input type="hidden" name="item_id" id="modalItemId" value="">
+        
+        <div style="padding: 1.25rem 1.5rem;">
+          <!-- Profil Barang (Read-only) -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-bottom: 0.25rem;" id="modalItemName">-</div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <span class="badge" style="background: #e2e8f0; color: #1e293b; font-family: monospace;" id="modalItemCode">-</span>
+              <span class="badge badge-primary" id="modalCompanyCode">-</span>
+              <span class="badge badge-secondary" id="modalItemStock">-</span>
+            </div>
+          </div>
+
+          <!-- Input No. PO -->
+          <div class="form-group mb-3">
+            <label class="form-label fw-bold" for="modalPoNumber" style="color: #0369a1; font-size: 0.9rem;">
+              <i class="bi bi-receipt me-1"></i> Nomor PO (Purchase Order)
+            </label>
+            <input type="text" name="po_number" id="modalPoNumber" class="form-control" 
+                  placeholder="Contoh: PO/2026/09/001" style="font-family: monospace; font-size: 0.95rem; border-color: #7dd3fc;" autocomplete="off">
+            <small class="text-muted">Nomor PO acuan pembelian barang ini dari supplier.</small>
+          </div>
+
+          <!-- Input Harga Satuan -->
+          <div class="form-group mb-3">
+            <label class="form-label fw-bold" for="modalPurchasePrice" style="color: #0369a1; font-size: 0.9rem;">
+              <i class="bi bi-cash-stack me-1"></i> Harga Satuan / Beli (Rp) <span class="text-danger">*</span>
+            </label>
+            <div class="input-group" style="display: flex;">
+              <span style="background: #f1f5f9; padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-right: none; border-radius: 6px 0 0 6px; font-weight: 600; color: #64748b;">Rp</span>
+              <input type="number" step="any" min="0" name="purchase_price" id="modalPurchasePrice" class="form-control" 
+                    placeholder="0" required style="border-radius: 0 6px 6px 0; font-family: monospace; font-weight: 600; font-size: 1rem; border-color: #7dd3fc;" autocomplete="off">
+            </div>
+            <small class="text-muted">Harga per 1 satuan unit barang (dalam Rupiah).</small>
+          </div>
+
+          <!-- Catatan Perubahan -->
+          <div class="form-group mb-1">
+            <label class="form-label fw-bold" for="modalPriceNotes" style="color: #475569; font-size: 0.85rem;">
+              <i class="bi bi-journal-text me-1"></i> Catatan Perubahan (Opsional)
+            </label>
+            <input type="text" name="notes" id="modalPriceNotes" class="form-control" 
+                  placeholder="Contoh: Penyesuaian supplier, update harga per PO baru, dll." style="font-size: 0.85rem;">
+            <small class="text-muted">Akan ditampilkan pada laporan riwayat perubahan data barang.</small>
+          </div>
+        </div>
+
+        <div style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center;">
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closePurchasingModal()">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
+              <i class="bi bi-check-circle me-1"></i> Simpan No. PO & Harga
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
-
-    <form method="POST" action="<?= url('items/update-purchasing') ?>" id="formPurchasingModal">
-      <input type="hidden" name="item_id" id="modalItemId" value="">
-      
-      <div style="padding: 1.25rem 1.5rem;">
-        <!-- Peringatan Hak Akses Purchasing & Kunci Data Master -->
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.825rem; color: #1e40af; display: flex; gap: 0.75rem; align-items: flex-start;">
-          <i class="bi bi-shield-lock-fill" style="font-size: 1.2rem; color: #2563eb; flex-shrink: 0; margin-top: 1px;"></i>
-          <div>
-            <strong>Hak Akses Purchasing:</strong> Anda hanya dapat menginput atau mengubah <strong>Harga Satuan Beli</strong>. Setiap perubahan harga akan otomatis tercatat ke dalam sistem riwayat laporan.
-          </div>
-        </div>
-
-        <!-- Profil Barang (Read-only) -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
-          <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-bottom: 0.25rem;" id="modalItemName">-</div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-            <span class="badge" style="background: #e2e8f0; color: #1e293b; font-family: monospace;" id="modalItemCode">-</span>
-            <span class="badge badge-primary" id="modalCompanyCode">-</span>
-            <span class="badge badge-secondary" id="modalItemStock">-</span>
-          </div>
-        </div>
-
-        <!-- Input Harga Satuan -->
-        <div class="form-group mb-3">
-          <label class="form-label fw-bold" for="modalPurchasePrice" style="color: #0369a1; font-size: 0.9rem;">
-            <i class="bi bi-cash-stack me-1"></i> Harga Satuan / Beli (Rp) <span class="text-danger">*</span>
-          </label>
-          <div class="input-group" style="display: flex;">
-            <span style="background: #f1f5f9; padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-right: none; border-radius: 6px 0 0 6px; font-weight: 600; color: #64748b;">Rp</span>
-            <input type="number" step="any" min="0" name="purchase_price" id="modalPurchasePrice" class="form-control" 
-                   placeholder="0" required style="border-radius: 0 6px 6px 0; font-family: monospace; font-weight: 600; font-size: 1rem; border-color: #7dd3fc;" autocomplete="off">
-          </div>
-          <small class="text-muted">Harga per 1 satuan unit barang (dalam Rupiah).</small>
-        </div>
-
-        <!-- Catatan Perubahan Harga -->
-        <div class="form-group mb-1">
-          <label class="form-label fw-bold" for="modalPriceNotes" style="color: #475569; font-size: 0.85rem;">
-            <i class="bi bi-journal-text me-1"></i> Catatan Perubahan Harga (Opsional)
-          </label>
-          <input type="text" name="notes" id="modalPriceNotes" class="form-control" 
-                 placeholder="Contoh: Penyesuaian supplier, update harga per PO baru, dll." style="font-size: 0.85rem;">
-          <small class="text-muted">Akan ditampilkan pada laporan riwayat perubahan harga barang.</small>
-        </div>
-      </div>
-
-      <div style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="clearPurchasingModalFields()" title="Set harga jadi Rp 0" style="border-color: #fca5a5; color: #dc2626;">
-          <i class="bi bi-trash3 me-1"></i> Set Rp 0
-        </button>
-        <div style="display: flex; gap: 0.5rem;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="closePurchasingModal()">Batal</button>
-          <button type="submit" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
-            <i class="bi bi-check-circle me-1"></i> Simpan Harga
-          </button>
-        </div>
-      </div>
-    </form>
   </div>
-</div>
-<?php endif; ?>
+  <?php endif; ?>
 
 <?php if (canEditItem()): ?>
 <!-- Modal Edit Isi Barang (Khusus Kepala Gudang, Karyawan, Admin di Menu Daftar Barang) -->
@@ -655,11 +662,9 @@ function closeEditItemModal() {
           </div>
         </div>
 
-        <!-- Minimum Stok -->
-        <div class="form-group mb-2">
-          <label class="form-label fw-bold" for="editMinStock">Stok Minimum Peringatan</label>
-          <input type="number" step="any" min="0" name="minimum_stock" id="editMinStock" class="form-control" placeholder="0">
-          <small class="text-muted">Pemberitahuan status 'MENIPIS' saat stok berada di bawah batas ini.</small>
+        <input type="hidden" name="minimum_stock" id="editMinStock" value="0">
+        <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #64748b;">
+          <i class="bi bi-info-circle me-1 text-primary"></i> Batasan stok peringatan (status MENIPIS / HABIS) diatur terpusat di menu <strong>Master Kategori</strong>.
         </div>
 
         <!-- Spesifikasi / Ukuran -->

@@ -87,16 +87,22 @@ class SimpleXlsxWriter
         // 4. xl/styles.xml
         $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
         $styles .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
-        $styles .= '<fonts count="3">';
+        $styles .= '<fonts count="6">';
         $styles .= '<font><sz val="10"/><name val="Calibri"/></font>'; // 0: Normal
         $styles .= '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'; // 1: Header (White, Bold)
         $styles .= '<font><b/><sz val="10"/><name val="Calibri"/></font>'; // 2: Bold
+        $styles .= '<font><b/><sz val="10"/><color rgb="FF006100"/><name val="Calibri"/></font>'; // 3: Dark Green Bold
+        $styles .= '<font><b/><sz val="10"/><color rgb="FF9C6500"/><name val="Calibri"/></font>'; // 4: Dark Yellow Bold
+        $styles .= '<font><b/><sz val="10"/><color rgb="FF9C0006"/><name val="Calibri"/></font>'; // 5: Dark Red Bold
         $styles .= '</fonts>';
-        $styles .= '<fills count="4">';
+        $styles .= '<fills count="7">';
         $styles .= '<fill><patternFill patternType="none"/></fill>'; // 0: None
         $styles .= '<fill><patternFill patternType="gray125"/></fill>'; // 1: Gray125
-        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FF1E3A8A"/></patternFill></fill>'; // 2: Navy Header
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FF1B365D"/></patternFill></fill>'; // 2: Dark Navy Header
         $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>'; // 3: Zebra Row
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill>'; // 4: Green Marker
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill>'; // 5: Yellow Marker
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill>'; // 6: Red Marker
         $styles .= '</fills>';
         $styles .= '<borders count="2">';
         $styles .= '<border><left/><right/><top/><bottom/></border>'; // 0: None
@@ -108,11 +114,16 @@ class SimpleXlsxWriter
         $styles .= '</border>'; // 1: Thin Gray Border
         $styles .= '</borders>';
         $styles .= '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>';
-        $styles .= '<cellXfs count="4">';
+        $styles .= '<cellXfs count="9">';
         $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/>'; // 0: Normal with border
-        $styles .= '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'; // 1: Header (Navy, White, Bold)
+        $styles .= '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 1: Header (Navy, White, Bold, Center)
         $styles .= '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>'; // 2: Zebra Alt Row
         $styles .= '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>'; // 3: Bold with border
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 4: Center normal
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 5: Center zebra
+        $styles .= '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 6: Green Marker (TERSEDIA)
+        $styles .= '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 7: Yellow Marker (MENIPIS)
+        $styles .= '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 8: Red Marker (HABIS)
         $styles .= '</cellXfs>';
         $styles .= '</styleSheet>';
         $files['xl/styles.xml'] = $styles;
@@ -170,15 +181,34 @@ class SimpleXlsxWriter
 
             // Data rows
             foreach ($s['rows'] as $rowIdx => $row) {
-                $styleId = ($rowIdx % 2 === 1) ? 2 : 0; // subtle zebra alternating fill
+                $rowDefaultStyle = ($rowIdx % 2 === 1) ? 2 : 0; // subtle zebra alternating fill
                 $ws .= '<row r="' . $rNum . '" customHeight="1" ht="20">';
                 $colIdx = 0;
-                foreach ($row as $val) {
+                foreach ($row as $rawVal) {
+                    $cellStyle = $rowDefaultStyle;
+                    $val = $rawVal;
+
+                    if (is_array($rawVal)) {
+                        $val = $rawVal['v'] ?? $rawVal['value'] ?? $rawVal[0] ?? '';
+                        $marker = strtolower((string)($rawVal['marker'] ?? $rawVal['style'] ?? $rawVal['status'] ?? ''));
+                        if ($marker === 'green' || $marker === 'tersedia' || $marker === 'success') {
+                            $cellStyle = 6;
+                        } elseif ($marker === 'yellow' || $marker === 'menipis' || $marker === 'warning') {
+                            $cellStyle = 7;
+                        } elseif ($marker === 'red' || $marker === 'habis' || $marker === 'danger' || $marker === 'out') {
+                            $cellStyle = 8;
+                        } elseif (($rawVal['align'] ?? '') === 'center') {
+                            $cellStyle = ($rowIdx % 2 === 1) ? 5 : 4;
+                        } elseif (isset($rawVal['s'])) {
+                            $cellStyle = (int)$rawVal['s'];
+                        }
+                    }
+
                     $cellRef = $this->colLetter($colIdx) . $rNum;
                     if (is_numeric($val) && !preg_match('/^0[0-9]+/', (string)$val)) {
-                        $ws .= '<c r="' . $cellRef . '" s="' . $styleId . '"><v>' . (float)$val . '</v></c>';
+                        $ws .= '<c r="' . $cellRef . '" s="' . $cellStyle . '"><v>' . (float)$val . '</v></c>';
                     } else {
-                        $ws .= '<c r="' . $cellRef . '" t="inlineStr" s="' . $styleId . '"><is><t>' . htmlspecialchars((string)($val ?? ''), ENT_XML1) . '</t></is></c>';
+                        $ws .= '<c r="' . $cellRef . '" t="inlineStr" s="' . $cellStyle . '"><is><t>' . htmlspecialchars((string)($val ?? ''), ENT_XML1) . '</t></is></c>';
                     }
                     $colIdx++;
                 }

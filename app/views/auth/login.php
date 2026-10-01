@@ -93,7 +93,7 @@ $flash = getFlash();
     </div>
 
     <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem;">
-      <i class="bi bi-box-arrow-in-right"></i> Masuk ke Sistem
+       Masuk ke Sistem
     </button>
   </form>
 
