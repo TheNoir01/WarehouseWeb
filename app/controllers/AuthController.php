@@ -34,7 +34,7 @@ class AuthController
             $_SESSION['token'] = $response['data']['token'];
             $_SESSION['user'] = $response['data']['user'];
             $target = ($response['data']['user']['role'] ?? '') === 'purchasing' ? 'items' : 'dashboard';
-            redirect($target, 'Selamat datang kembali, ' . $response['data']['user']['name'] . '!');
+            redirect($target);
         } else {
             $msg = $response['message'] ?? 'Login gagal. Periksa kredensial Anda.';
             redirect('login', $msg, 'danger');

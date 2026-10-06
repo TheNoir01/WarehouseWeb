@@ -94,7 +94,7 @@ include __DIR__ . '/../layout/header.php';
             <th>Kategori</th>
             <th>Total Stok</th>
             <th >Status</th>
-            <th class="text-right" style="white-space: nowrap; width: 1%;"></th>
+            <th class="text-center" style="white-space: nowrap; width: 1%;">Aksi</th>
           </tr>
         </thead>
         <tbody id="itemsTableBody">
@@ -126,7 +126,6 @@ include __DIR__ . '/../layout/header.php';
                   data-category="<?= htmlspecialchars($item['category_id'] ?? '') ?>"
                   data-status="<?= htmlspecialchars($item['stock_status'] ?? '') ?>">
                 <td>
-
                   <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
                     <?= htmlspecialchars($item['item_code']) ?>
                   </span>
@@ -152,7 +151,7 @@ include __DIR__ . '/../layout/header.php';
                   <?= formatQty($item['total_stock'], $item['unit']['code'] ?? '') ?>
                 </td>
                 <td><?= renderBadge($item['stock_status']) ?></td>
-                <td class="text-right" style="white-space: nowrap;">
+                <td class="text-center" style="white-space: nowrap;">
                   <?php
                     $itemJson = htmlspecialchars(json_encode([
                         'id' => $item['id'],

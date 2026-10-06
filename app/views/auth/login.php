@@ -7,6 +7,7 @@ $flash = getFlash();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Sistem Gudang</title>
+  <link rel="icon" type="image/png" href="<?= asset('img/kjg.png') ?>">
   <link rel="stylesheet" href="<?= asset('vendor/bootstrap-icons/bootstrap-icons.min.css') ?>">
   <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
   <style>
@@ -70,13 +71,19 @@ $flash = getFlash();
 
 <div class="login-card">
   <div class="login-header">
-    <div class="login-logo"><i class="bi bi-box-seam-fill"></i></div>
+    <div class="login-logo" style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
+      <img src="<?= asset('img/kjg.png') ?>" alt="Logo KJG" style="width: 58px; height: 58px; object-fit: contain;">
+    </div>
     <h1 class="login-title">Sistem Gudang</h1>
-    <p class="login-subtitle">1 Gudang Fisik</p>
   </div>
 
   <?php if ($flash): ?>
-    <div class="alert alert-<?= $flash['type'] ?>">
+    <script>
+      setTimeout(function(){
+        document.getElementById('flash-message').style.display = 'none';
+      }, 2000);
+    </script>
+    <div class="alert alert-<?= $flash['type'] ?>" id="flash-message">
       <span><?= htmlspecialchars($flash['message']) ?></span>
     </div>
   <?php endif; ?>
@@ -84,7 +91,7 @@ $flash = getFlash();
   <form action="<?= url('auth/login-submit') ?>" method="POST">
     <div class="form-group">
       <label for="email"><i class="bi bi-person"></i> Email atau Username</label>
-      <input type="text" id="email" name="email" class="form-control" required placeholder="kepala@warehouse.test" autofocus>
+      <input type="text" id="email" name="email" class="form-control" required placeholder="user@warehouse.com" autofocus>
     </div>
 
     <div class="form-group">

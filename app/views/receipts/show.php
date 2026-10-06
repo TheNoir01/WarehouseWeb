@@ -8,7 +8,7 @@ include __DIR__ . '/../layout/header.php';
     <h1 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">
       Dokumen Penerimaan: <?= htmlspecialchars($receipt['receipt_number'] ?? '') ?>
     </h1>
-    <span class="badge badge-primary"><?= htmlspecialchars($receipt['company']['code'] ?? '') ?></span>
+    <?= renderCompanyBadge($receipt['company']['code'] ?? '') ?>
     <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">
       Tanggal: <?= formatDate($receipt['received_date']) ?>
     </span>
@@ -17,11 +17,6 @@ include __DIR__ . '/../layout/header.php';
     <?php if (canManagePurchasing()): ?>
       <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $receipt['id'] ?>" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
         <i class="bi bi-tag-fill me-1"></i> Input / Edit PO & Harga
-      </a>
-    <?php endif; ?>
-    <?php if (canManageMaster()): ?>
-      <a href="<?= url('receipts/edit') ?>&id=<?= $receipt['id'] ?>" class="btn btn-warning btn-sm" style="color: #1e293b; font-weight: 600;">
-        <i class="bi bi-pencil-square me-1"></i> Koreksi Penerimaan
       </a>
     <?php endif; ?>
     <button onclick="window.print()" class="btn btn-outline btn-sm">
@@ -55,7 +50,7 @@ include __DIR__ . '/../layout/header.php';
         <div class="fw-bold" style="font-family: monospace; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 2px;">
           <?php if (!empty($receipt['po_number'])): ?>
             <span style="color: #0284c7; font-size: 0.95rem; font-weight: 700; background: #f0f9ff; padding: 2px 8px; border-radius: 4px; border: 1px solid #bae6fd;">
-              <i class="bi bi-file-earmark-text me-1"></i><?= htmlspecialchars($receipt['po_number']) ?>
+              <?= htmlspecialchars($receipt['po_number']) ?>
             </span>
           <?php else: ?>
             <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 600; padding: 3px 8px;">
@@ -93,13 +88,11 @@ include __DIR__ . '/../layout/header.php';
             <th style="width: 4%;">No</th>
             <th>ID Barang</th>
             <th>Nama Barang & Spesifikasi</th>
-            <th>Lokasi Rak Gudang</th>
             <th class="text-right">Kuantitas</th>
             <th>Satuan</th>
             <th class="text-right" style="white-space: nowrap; min-width: 130px;">Harga Satuan</th>
             <th class="text-right" style="white-space: nowrap; min-width: 160px;">Total Harga</th>
             <th>Kondisi Fisik</th>
-            <th>Keterangan</th>
           </tr>
         </thead>
         <tbody>
@@ -121,11 +114,6 @@ include __DIR__ . '/../layout/header.php';
                   <?= htmlspecialchars($itemRow['item']['name'] ?? '-') ?>
                 </a>
               </td>
-              <td>
-                <span class="badge badge-secondary">
-                  <?= htmlspecialchars($itemRow['location']['code'] ?? '-') ?>
-                </span>
-              </td>
               <td class="text-right fw-bold" style="font-size: 0.95rem; color: var(--success); white-space: nowrap;">
                 +<?= formatQty($itemRow['qty']) ?>
               </td>
@@ -141,20 +129,19 @@ include __DIR__ . '/../layout/header.php';
                   <?= strtoupper($itemRow['condition'] ?? 'good') ?>
                 </span>
               </td>
-              <td class="text-muted" style="font-size: 0.85rem;"><?= htmlspecialchars($itemRow['notes'] ?? '-') ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
         <?php if ($grandTotal > 0): ?>
           <tfoot>
             <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border);">
-              <td colspan="7" class="text-right" style="font-size: 0.95rem; white-space: nowrap; padding: 0.75rem 1rem;">
-                Grand Total Nilai Pembelian:
+              <td colspan="6" class="text-right" style="font-size: 0.95rem; white-space: nowrap; padding: 0.75rem 1rem;">
+                Total Nilai Pembelian:
               </td>
               <td class="text-right" style="font-size: 1.05rem; font-family: monospace; color: #0284c7; white-space: nowrap; padding: 0.75rem 1rem;">
                 <?= formatRupiah($grandTotal) ?>
               </td>
-              <td colspan="2"></td>
+              <td></td>
             </tr>
           </tfoot>
         <?php endif; ?>
@@ -212,7 +199,7 @@ include __DIR__ . '/../layout/header.php';
           <tbody>
             <?php foreach ($receipt['purchasing_logs'] as $pLog): ?>
               <?php
-                $pDate = !empty($pLog['created_at']) ? date('d/m/Y H:i', strtotime($pLog['created_at'])) . ' WIB' : '-';
+                $pDate = !empty($pLog['created_at']) ? date('d/m/Y H:i', strtotime($pLog['created_at'])) : '-';
                 $pUser = $pLog['user']['name'] ?? ($pLog['user']['username'] ?? 'Purchasing');
                 $oldVals = $pLog['old_values'] ?? [];
                 $newVals = $pLog['new_values'] ?? [];
@@ -224,9 +211,6 @@ include __DIR__ . '/../layout/header.php';
               <tr>
                 <td>
                   <div style="font-weight: 600; font-size: 0.85rem; color: #334155;"><?= $pDate ?></div>
-                  <?php if (!empty($pLog['ip_address'])): ?>
-                    <div class="text-muted" style="font-size: 0.72rem;">IP: <?= htmlspecialchars($pLog['ip_address']) ?></div>
-                  <?php endif; ?>
                 </td>
                 <td>
                   <?php if ($oldPo !== $newPo): ?>
@@ -242,7 +226,7 @@ include __DIR__ . '/../layout/header.php';
                       <span class="text-muted" style="font-size: 0.72rem;">Baru:</span>
                       <?php if (!empty($newPo)): ?>
                         <span style="font-family: monospace; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd;">
-                          <i class="bi bi-file-earmark-check me-1"></i><?= htmlspecialchars($newPo) ?>
+                          <?= htmlspecialchars($newPo) ?>
                         </span>
                       <?php else: ?>
                         <span class="text-muted" style="font-style: italic;">(Dikosongkan)</span>

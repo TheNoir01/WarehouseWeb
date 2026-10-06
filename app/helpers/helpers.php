@@ -191,3 +191,17 @@ function icon(string $name, string $extraClass = '', ?string $style = null): str
     $styleAttr = $style ? " style=\"{$style}\"" : '';
     return "<i class=\"bi bi-{$name} {$extraClass}\"{$styleAttr}></i>";
 }
+
+function renderCompanyBadge(?string $code): string
+{
+    $codeUpper = strtoupper(trim((string) $code));
+    if ($codeUpper === 'LNP') {
+        return '<span class="badge badge-company-lnp" style="background-color: #0284c7; color: #ffffff; border: 1px solid #0369a1; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">LNP</span>';
+    } elseif ($codeUpper === 'KJG') {
+        return '<span class="badge badge-company-kjg" style="background-color: #8B0000; color: #ffffff; border: 1px solid #6b001b; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">KJG</span>';
+    } elseif (!empty($codeUpper) && $codeUpper !== '-') {
+        return '<span class="badge badge-secondary" style="font-weight: 700; font-size: 0.75rem;">' . htmlspecialchars($codeUpper) . '</span>';
+    }
+    return '<span class="text-muted" style="font-size: 0.75rem;">-</span>';
+}
+

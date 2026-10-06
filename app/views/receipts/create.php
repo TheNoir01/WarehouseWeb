@@ -40,7 +40,7 @@ include __DIR__ . '/../layout/header.php';
               [<strong><?= htmlspecialchars($newItem['item_code']) ?></strong>] <?= htmlspecialchars($newItem['name']) ?>
             </span>
             <div style="font-size: 0.8rem; color: #15803d; margin-top: 2px;">
-              Barang telah otomatis disiapkan pada baris penerimaan pertama di bawah. Silakan masukkan kuantitas dan lokasi rak.
+              Barang telah otomatis disiapkan pada baris penerimaan pertama di bawah. Silakan masukkan kuantitas barang masuk.
             </div>
           </div>
         </div>
@@ -133,11 +133,10 @@ include __DIR__ . '/../layout/header.php';
           <table class="table" id="receipt-items-table">
             <thead>
               <tr>
-                <th style="width: 48%;">Barang (Kode & Nama)</th>
-                <th style="width: 20%;">Qty Masuk</th>
-                <th style="width: 14%;">Kondisi</th>
-                <th style="width: 13%;">Keterangan</th>
-                <th style="width: 5%; text-align: center;">Hapus</th>
+                <th style="width: 53%;">Barang (Kode & Nama)</th>
+                <th style="width: 24%;">Qty Masuk</th>
+                <th style="width: 16%;">Kondisi</th>
+                <th style="width: 7%; text-align: center;">Hapus</th>
               </tr>
             </thead>
             <tbody id="receipt-items-tbody">
@@ -185,9 +184,6 @@ include __DIR__ . '/../layout/header.php';
                       <option value="other">Lainnya</option>
                     </select>
                   </td>
-                  <td>
-                    <input type="text" name="items[0][notes]" class="form-control item-notes" placeholder="Catatan item...">
-                  </td>
                   <td class="text-center">
                     <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)">
                       <i class="bi bi-trash"></i>
@@ -196,7 +192,7 @@ include __DIR__ . '/../layout/header.php';
                 </tr>
               <?php else: ?>
                 <tr id="empty-receipt-row">
-                  <td colspan="5" class="text-center text-muted" style="padding: 2.25rem 1rem;">
+                  <td colspan="4" class="text-center text-muted" style="padding: 2.25rem 1rem;">
                     <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
                     <span style="font-weight: 600; color: #64748b; font-size: 0.95rem;">Belum ada barang di daftar penerimaan.</span>
                     <div style="font-size: 0.825rem; color: #94a3b8; margin-top: 0.25rem;">
@@ -476,9 +472,6 @@ function addItemToReceiptFromSearch(item) {
         <option value="other">Lainnya</option>
       </select>
     </td>
-    <td>
-      <input type="text" name="items[${rowCount}][notes]" class="form-control item-notes" placeholder="Catatan item...">
-    </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)">
         <i class="bi bi-trash"></i>
@@ -515,7 +508,7 @@ function removeReceiptRow(btn) {
   if (remaining.length === 0) {
     tbody.innerHTML = `
       <tr id="empty-receipt-row">
-        <td colspan="5" class="text-center text-muted" style="padding: 2.25rem 1rem;">
+        <td colspan="4" class="text-center text-muted" style="padding: 2.25rem 1rem;">
           <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
           <span style="font-weight: 600; color: #64748b; font-size: 0.95rem;">Belum ada barang di daftar penerimaan.</span>
           <div style="font-size: 0.825rem; color: #94a3b8; margin-top: 0.25rem;">

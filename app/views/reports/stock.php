@@ -97,7 +97,7 @@ include __DIR__ . '/../layout/header.php';
                 $stockStatus = $b['stock_status'] ?? ($stock <= 0 ? 'HABIS' : (($min > 0 && $stock <= $min) ? 'MENIPIS' : 'TERSEDIA'));
               ?>
               <tr>
-                <td><span class="badge badge-primary"><?= htmlspecialchars($b['company']['code'] ?? 'N/A') ?></span></td>
+                <td><?= renderCompanyBadge($b['company']['code'] ?? 'N/A') ?></td>
                 <td>
                   <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
                     <?= htmlspecialchars($item['item_code'] ?? '-') ?>

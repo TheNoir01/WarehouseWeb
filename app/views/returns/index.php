@@ -64,7 +64,7 @@ include __DIR__ . '/../layout/header.php';
                   </a>
                 </td>
                 <td><?= formatDate($ret['returned_date']) ?></td>
-                <td><span class="badge badge-primary"><?= htmlspecialchars($ret['company']['code'] ?? '-') ?></span></td>
+                <td><?= renderCompanyBadge($ret['company']['code'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($ret['returned_by_name']) ?></td>
                 <td><?= htmlspecialchars($ret['received_by']['name'] ?? '-') ?></td>
                 <td><span class="badge badge-secondary"><?= $ret['items_count'] ?? count($ret['items'] ?? []) ?> Item</span></td>

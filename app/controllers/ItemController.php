@@ -71,9 +71,6 @@ class ItemController
                     ?>
                     <tr class="item-row">
                       <td>
-                        <span class="badge badge-primary me-1" style="font-size: 0.75rem;">
-                          <?= htmlspecialchars($item['company']['code'] ?? 'N/A') ?>
-                        </span>
                         <span style="font-family: monospace; font-weight: 600; color: #1e40af;">
                           <?= htmlspecialchars($item['item_code']) ?>
                         </span>
@@ -82,9 +79,6 @@ class ItemController
                         <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="fw-bold">
                           <?= htmlspecialchars($item['name']) ?>
                         </a>
-                        <?php if (!empty($item['specification'])): ?>
-                          <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($item['specification']) ?></div>
-                        <?php endif; ?>
                       </td>
                       <td style="font-family: monospace;">
                         <?php if ((float)($item['purchase_price'] ?? 0) > 0): ?>
@@ -94,11 +88,6 @@ class ItemController
                         <?php else: ?>
                           <span class="text-muted" style="font-size: 0.8rem; font-style: italic;">-</span>
                         <?php endif; ?>
-                        <?php if (!empty($item['po_number'])): ?>
-                          <div style="font-size: 0.75rem; color: #475569; margin-top: 2px;">
-                            <i class="bi bi-receipt me-1 text-muted"></i><?= htmlspecialchars($item['po_number']) ?>
-                          </div>
-                        <?php endif; ?>
                       </td>
                       <td>
                         <?= htmlspecialchars($item['category']['name'] ?? '-') ?>
@@ -107,7 +96,7 @@ class ItemController
                         <?= formatQty($item['total_stock'], $item['unit']['code'] ?? '') ?>
                       </td>
                       <td><?= renderBadge($item['stock_status']) ?></td>
-                      <td class="text-right" style="white-space: nowrap;">
+                      <td class="text-center" style="white-space: nowrap;">
                         <div class="action-buttons">
                           <?php if (isPurchasing()): ?>
                             <button type="button" class="btn-action-price btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" title="Input / Edit No. PO & Harga">

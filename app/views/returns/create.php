@@ -60,9 +60,8 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
           <table class="table" id="return-items-table">
             <thead>
               <tr>
-                <th style="width: 30%;">Barang ex Transaksi OUT</th>
-                <th style="width: 15%;">Lokasi Simpan Rak</th>
-                <th style="width: 12%;">Qty Kembali</th>
+                <th style="width: 38%;">Barang ex Transaksi OUT</th>
+                <th style="width: 14%;">Qty Kembali</th>
                 <th style="width: 18%;">Status Pengembalian</th>
                 <th style="width: 12%;">Kondisi</th>
                 <th style="width: 8%;">Detail Sisa</th>
@@ -75,13 +74,7 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
                   <select name="items[0][stock_issue_item_id]" class="form-select issue-item-dropdown" required onchange="updateReturnRowUnit(this)">
                     <option value="">Pilih Barang dari Dokumen</option>
                   </select>
-                </td>
-                <td>
-                  <select name="items[0][warehouse_location_id]" class="form-select" required>
-                    <?php foreach ($locations as $loc): ?>
-                      <option value="<?= $loc['id'] ?>"><?= htmlspecialchars($loc['code']) ?></option>
-                    <?php endforeach; ?>
-                  </select>
+                  <input type="hidden" name="items[0][warehouse_location_id]" value="1">
                 </td>
                 <td>
                   <div class="input-group">
@@ -273,13 +266,7 @@ function addReturnRow() {
       <select name="items[${returnRowCount}][stock_issue_item_id]" class="form-select issue-item-dropdown" required onchange="updateReturnRowUnit(this)">
         <option value="">-- Pilih Barang dari Dokumen OUT --</option>
       </select>
-    </td>
-    <td>
-      <select name="items[${returnRowCount}][warehouse_location_id]" class="form-select" required>
-        <?php foreach ($locations as $loc): ?>
-          <option value="<?= $loc['id'] ?>"><?= htmlspecialchars($loc['code']) ?></option>
-        <?php endforeach; ?>
-      </select>
+      <input type="hidden" name="items[${returnRowCount}][warehouse_location_id]" value="1">
     </td>
     <td>
       <div class="input-group">

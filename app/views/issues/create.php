@@ -60,16 +60,14 @@ include __DIR__ . '/../layout/header.php';
           <table class="table" id="issue-items-table">
             <thead>
               <tr>
-                <th style="width: 44%;">Nama Barang & Spesifikasi</th>
-                <th style="width: 20%;">Lokasi Pengambilan Rak</th>
-                <th style="width: 18%;">Qty Keluar</th>
-                <th style="width: 13%;">Keterangan</th>
-                <th style="width: 5%; text-align: center;">Hapus</th>
+                <th style="width: 65%;">Nama Barang & Spesifikasi</th>
+                <th style="width: 25%;">Qty Keluar</th>
+                <th style="width: 10%; text-align: center;">Hapus</th>
               </tr>
             </thead>
             <tbody id="issue-items-tbody">
               <tr id="empty-issue-row">
-                <td colspan="5" class="text-center text-muted" style="padding: 2.25rem 1rem;">
+                <td colspan="3" class="text-center text-muted" style="padding: 2.25rem 1rem;">
                   <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
                   <span style="font-weight: 600; color: #64748b; font-size: 0.95rem;">Belum ada barang di daftar pengeluaran.</span>
                   <div style="font-size: 0.825rem; color: #94a3b8; margin-top: 0.25rem;">
@@ -423,12 +421,6 @@ function addItemToIssueFromSearch(item) {
         ${item.specification ? `<span class="text-muted">(${escapeHtml(item.specification)})</span>` : ''}
       </div>
       <input type="hidden" name="items[${issueItemIndex}][item_id]" value="${item.id}">
-    </td>
-    <td>
-      <select name="items[${issueItemIndex}][warehouse_location_id]" class="form-select" required>
-        ${locationOptionsHtml}
-      </select>
-    </td>
     <td>
       <div class="input-group">
         <input type="number" step="${step}" min="${min}" max="${item.total_stock}" 
@@ -437,9 +429,6 @@ function addItemToIssueFromSearch(item) {
         <span class="unit-badge has-unit">${escapeHtml(item.unit_code || '-')}</span>
       </div>
       <div class="qty-warning text-danger" style="font-size: 0.75rem; margin-top: 2px; display: none;"></div>
-    </td>
-    <td>
-      <input type="text" name="items[${issueItemIndex}][notes]" class="form-control item-notes" placeholder="Catatan baris...">
     </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeIssueRow(this, '${escapeHtml(normName)}')" title="Hapus dari daftar">
@@ -489,7 +478,7 @@ function removeIssueRow(btn, normName) {
   if (tbody.querySelectorAll('tr.issue-row').length === 0) {
     tbody.innerHTML = `
       <tr id="empty-issue-row">
-        <td colspan="5" class="text-center text-muted" style="padding: 2.25rem 1rem;">
+        <td colspan="3" class="text-center text-muted" style="padding: 2.25rem 1rem;">
           <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
           <span style="font-weight: 600; color: #64748b; font-size: 0.95rem;">Belum ada barang di daftar pengeluaran.</span>
           <div style="font-size: 0.825rem; color: #94a3b8; margin-top: 0.25rem;">

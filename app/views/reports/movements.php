@@ -53,7 +53,6 @@ include __DIR__ . '/../layout/header.php';
             <th>Waktu Mutasi</th>
             <th>PT</th>
             <th>ID / Nama Barang</th>
-            <th>Lokasi Rak</th>
             <th>Tipe Mutasi</th>
             <th>No. Referensi</th>
             <th class="text-right">Saldo Awal</th>
@@ -65,20 +64,17 @@ include __DIR__ . '/../layout/header.php';
         </thead>
         <tbody>
           <?php if (empty($movements)): ?>
-            <tr><td colspan="11" class="text-center text-muted" style="padding: 2rem;">Tidak ada histori mutasi tercatat.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted" style="padding: 2rem;">Tidak ada histori mutasi tercatat.</td></tr>
           <?php else: ?>
             <?php foreach ($movements as $mov): ?>
               <tr>
                 <td class="text-muted"><?= formatDateTime($mov['created_at']) ?></td>
-                <td><span class="badge badge-secondary"><?= htmlspecialchars($mov['company']['code'] ?? '-') ?></span></td>
+                <td><?= renderCompanyBadge($mov['company']['code'] ?? '-') ?></td>
                 <td>
                   <a href="<?= url('items/show') ?>&id=<?= $mov['item']['id'] ?? '' ?>" class="fw-bold">
                     <?= htmlspecialchars($mov['item']['name'] ?? '-') ?>
                   </a>
                   <div class="text-muted" style="font-size: 0.75rem;"><?= htmlspecialchars($mov['item']['item_code'] ?? '') ?></div>
-                </td>
-                <td>
-                  <span class="badge badge-secondary"><?= htmlspecialchars($mov['location']['code'] ?? '-') ?></span>
                 </td>
                 <td><?= renderBadge($mov['movement_type']) ?></td>
                 <td style="font-family: monospace; font-weight: 600;">

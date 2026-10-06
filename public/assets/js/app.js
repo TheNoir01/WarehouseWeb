@@ -1,24 +1,27 @@
 document.addEventListener('DOMContentLoaded', function () {
   // Sidebar Offcanvas Drawer (Menu Pintasan via Tombol Garis Tiga)
-  const sidebar = document.getElementById('sidebarMenu');
-  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-  const btnToggle = document.getElementById('btnToggleSidebar');
-  const btnClose = document.getElementById('btnCloseSidebar');
+  function getSidebar() { return document.getElementById('sidebarMenu'); }
+  function getBackdrop() { return document.getElementById('sidebarBackdrop'); }
 
   window.openSidebar = function() {
-    if (sidebar) sidebar.classList.add('show');
-    if (sidebarBackdrop) sidebarBackdrop.classList.add('show');
+    const s = getSidebar();
+    const b = getBackdrop();
+    if (s) s.classList.add('show');
+    if (b) b.classList.add('show');
     document.body.style.overflow = 'hidden';
   };
 
   window.closeSidebar = function() {
-    if (sidebar) sidebar.classList.remove('show');
-    if (sidebarBackdrop) sidebarBackdrop.classList.remove('show');
+    const s = getSidebar();
+    const b = getBackdrop();
+    if (s) s.classList.remove('show');
+    if (b) b.classList.remove('show');
     document.body.style.overflow = '';
   };
 
   window.toggleSidebar = function() {
-    if (sidebar && sidebar.classList.contains('show')) {
+    const s = getSidebar();
+    if (s && s.classList.contains('show')) {
       window.closeSidebar();
     } else {
       window.openSidebar();
@@ -52,10 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Zoom In / Zoom Out Controls
-  const btnZoomIn = document.getElementById('btnZoomIn');
-  const btnZoomOut = document.getElementById('btnZoomOut');
-  const zoomDisplay = document.getElementById('zoomLevelDisplay');
+  // Zoom Dropdown Control
+  const zoomSelect = document.getElementById('zoomSelect');
 
   let currentZoom = parseInt(localStorage.getItem('wh_zoom') || '100', 10);
   if (isNaN(currentZoom) || currentZoom < 60 || currentZoom > 160) {
@@ -66,32 +67,28 @@ document.addEventListener('DOMContentLoaded', function () {
     currentZoom = Math.min(150, Math.max(70, zoom));
     document.documentElement.style.zoom = currentZoom + '%';
     localStorage.setItem('wh_zoom', currentZoom);
-    if (zoomDisplay) {
-      zoomDisplay.textContent = currentZoom + '%';
-      zoomDisplay.title = currentZoom === 100 ? 'Zoom Normal (100%)' : 'Klik untuk Reset ke 100%';
+
+    if (zoomSelect) {
+      let matched = false;
+      for (let i = 0; i < zoomSelect.options.length; i++) {
+        if (parseInt(zoomSelect.options[i].value, 10) === currentZoom) {
+          zoomSelect.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        const opt = new Option(currentZoom + '%', currentZoom, true, true);
+        zoomSelect.add(opt);
+      }
     }
   }
 
   applyZoom(currentZoom);
 
-  if (btnZoomIn) {
-    btnZoomIn.addEventListener('click', function(e) {
-      e.preventDefault();
-      applyZoom(currentZoom + 10);
-    });
-  }
-
-  if (btnZoomOut) {
-    btnZoomOut.addEventListener('click', function(e) {
-      e.preventDefault();
-      applyZoom(currentZoom - 10);
-    });
-  }
-
-  if (zoomDisplay) {
-    zoomDisplay.addEventListener('click', function(e) {
-      e.preventDefault();
-      applyZoom(100);
+  if (zoomSelect) {
+    zoomSelect.addEventListener('change', function () {
+      applyZoom(parseInt(this.value, 10));
     });
   }
 

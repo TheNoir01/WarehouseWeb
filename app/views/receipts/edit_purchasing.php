@@ -8,7 +8,7 @@ include __DIR__ . '/../layout/header.php';
     <h1 style="font-size: 1.35rem; font-weight: 700; color: #0f172a;">
       <i class="bi bi-tag-fill text-primary me-1"></i> Input / Edit No. PO & Harga Barang
     </h1>
-    <span class="badge badge-primary"><?= htmlspecialchars($receipt['company']['code'] ?? '') ?></span>
+    <?= renderCompanyBadge($receipt['company']['code'] ?? '') ?>
     <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">
       Dokumen Penerimaan: <strong style="font-family: monospace;"><?= htmlspecialchars($receipt['receipt_number'] ?? '') ?></strong>
     </span>
@@ -56,7 +56,7 @@ include __DIR__ . '/../layout/header.php';
 
       <div style="max-width: 500px;">
         <label class="form-label fw-bold" for="po_number" style="color: #0369a1;">
-          <i class="bi bi-receipt me-1"></i> Nomor Purchase Order (PO) <span class="text-danger">*</span>
+          </i> Nomor Purchase Order (PO) <span class="text-danger">*</span>
         </label>
         <input type="text" name="po_number" id="po_number" class="form-control" placeholder="Contoh: PO-KJG-2026-09-0012" value="<?= htmlspecialchars($receipt['po_number'] ?? '') ?>" style="font-family: monospace; font-size: 1rem; border-color: #38bdf8;" required autofocus>
         <div class="text-muted mt-1" style="font-size: 0.8rem;">Masukkan nomor referensi PO pembelian untuk dokumen ini.</div>
@@ -76,7 +76,6 @@ include __DIR__ . '/../layout/header.php';
             <tr>
               <th style="width: 4%;">No</th>
               <th>Kode & Nama Barang</th>
-              <th>Lokasi Rak</th>
               <th class="text-right">Kuantitas</th>
               <th>Satuan</th>
               <th style="width: 200px;" class="text-right">Harga Satuan (Rp)</th>
@@ -101,9 +100,6 @@ include __DIR__ . '/../layout/header.php';
                   <div style="font-family: monospace; font-size: 0.8rem; color: #64748b;">
                     <?= htmlspecialchars($itemRow['item']['item_code'] ?? '-') ?>
                   </div>
-                </td>
-                <td>
-                  <span class="badge badge-secondary"><?= htmlspecialchars($itemRow['location']['code'] ?? '-') ?></span>
                 </td>
                 <td class="text-right fw-bold" style="color: #059669; font-size: 0.95rem;">
                   <?= formatQty($qty) ?>
@@ -131,8 +127,8 @@ include __DIR__ . '/../layout/header.php';
           </tbody>
           <tfoot>
             <tr style="background: #f8fafc; border-top: 2px solid var(--border);">
-              <td colspan="5" class="text-right fw-bold" style="font-size: 1rem; vertical-align: middle; white-space: nowrap; padding: 0.75rem 1rem;">
-                Grand Total Pembelian:
+              <td colspan="4" class="text-right fw-bold" style="font-size: 1rem; vertical-align: middle; white-space: nowrap; padding: 0.75rem 1rem;">
+                Total Pembelian:
               </td>
               <td colspan="2" class="text-right fw-bold" style="font-family: monospace; font-size: 1.2rem; color: #0284c7; vertical-align: middle; white-space: nowrap; padding: 0.75rem 1rem;">
                 <span id="grandTotalDisplay"><?= formatRupiah($initialGrandTotal) ?></span>

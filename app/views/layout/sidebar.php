@@ -2,16 +2,16 @@
 $currentRoute = $_GET['r'] ?? 'dashboard';
 $user = currentUser();
 ?>
-<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="window.closeSidebar && window.closeSidebar();"></div>
 
 <aside class="sidebar" id="sidebarMenu">
   <div class="sidebar-header">
-    <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+    <div class="brand-icon"><img src="<?= asset('img/kjg.png') ?>" alt="Logo KJG"></div>
     <div>
       <div class="brand-name">GUDANG</div>
       <div class="brand-sub">Menu Pintasan</div>
     </div>
-    <button type="button" class="btn-close-sidebar" id="btnCloseSidebar" title="Tutup Menu Pintasan (Esc)" aria-label="Tutup Menu">
+    <button type="button" class="btn-close-sidebar" id="btnCloseSidebar" onclick="window.closeSidebar && window.closeSidebar();" title="Tutup Menu Pintasan (Esc)" aria-label="Tutup Menu">
       <i class="bi bi-x-lg"></i>
     </button>
   </div>
@@ -24,7 +24,7 @@ $user = currentUser();
           <i class="bi bi-boxes"></i> <span>Daftar Barang</span>
         </a>
       </li>
-      <li class="<?= (str_starts_with($currentRoute, 'receipts') && !str_starts_with($currentRoute, 'receipts/purchasing-history')) ? 'active' : '' ?>">
+      <li class="<?= (str_starts_with($currentRoute, 'receipts') && !str_starts_with($currentRoute, 'receipts/purchasing-history') && !str_starts_with($currentRoute, 'purchasing/history')) ? 'active' : '' ?>">
         <a href="<?= url('receipts') ?>">
           <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
         </a>
@@ -49,7 +49,7 @@ $user = currentUser();
         </a>
       </li>
 
-      <li class="<?= str_starts_with($currentRoute, 'receipts') ? 'active' : '' ?>">
+      <li class="<?= (str_starts_with($currentRoute, 'receipts') && !str_starts_with($currentRoute, 'receipts/purchasing-history') && !str_starts_with($currentRoute, 'purchasing/history')) ? 'active' : '' ?>">
         <a href="<?= url('receipts') ?>">
           <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
         </a>
@@ -77,13 +77,13 @@ $user = currentUser();
     <?php if (canManageMaster()): ?>
       <li class="menu-category">Master Data</li>
 
-      <li class="<?= $currentRoute === 'masters/categories' ? 'active' : '' ?>">
+      <li class="<?= str_starts_with($currentRoute, 'masters/categories') ? 'active' : '' ?>">
         <a href="<?= url('masters/categories') ?>">
           <i class="bi bi-tags"></i> <span>Kategori</span>
         </a>
       </li>
 
-      <li class="<?= $currentRoute === 'masters/units' ? 'active' : '' ?>">
+      <li class="<?= str_starts_with($currentRoute, 'masters/units') ? 'active' : '' ?>">
         <a href="<?= url('masters/units') ?>">
           <i class="bi bi-rulers"></i> <span>Satuan Ukuran</span>
         </a>
@@ -93,13 +93,13 @@ $user = currentUser();
     <?php if (canViewReports()): ?>
       <li class="menu-category">Laporan & Audit</li>
 
-      <li class="<?= $currentRoute === 'reports/stock' ? 'active' : '' ?>">
+      <li class="<?= str_starts_with($currentRoute, 'reports/stock') ? 'active' : '' ?>">
         <a href="<?= url('reports/stock') ?>">
           <i class="bi bi-graph-up"></i> <span>Laporan Stok per PT</span>
         </a>
       </li>
 
-      <li class="<?= $currentRoute === 'reports/movements' ? 'active' : '' ?>">
+      <li class="<?= str_starts_with($currentRoute, 'reports/movements') ? 'active' : '' ?>">
         <a href="<?= url('reports/movements') ?>">
           <i class="bi bi-clock-history"></i> <span>Mutasi Stok (Histori)</span>
         </a>
@@ -114,7 +114,7 @@ $user = currentUser();
 
     <?php if (canManageUsers()): ?>
       <li class="menu-category">Pengaturan</li>
-      <li class="<?= $currentRoute === 'users' ? 'active' : '' ?>">
+      <li class="<?= str_starts_with($currentRoute, 'users') ? 'active' : '' ?>">
         <a href="<?= url('users') ?>">
           <i class="bi bi-people"></i> <span>Pengguna & Hak Akses</span>
         </a>

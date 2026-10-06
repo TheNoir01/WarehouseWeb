@@ -117,18 +117,16 @@ include __DIR__ . '/../layout/header.php';
           <table class="table" id="receipt-items-table">
             <thead>
               <tr>
-                <th style="width: 35%;">Barang (Kode & Nama)</th>
-                <th style="width: 15%;">Lokasi Rak</th>
-                <th style="width: 18%;">Qty Masuk (Koreksi)</th>
-                <th style="width: 12%;">Kondisi</th>
-                <th style="width: 14%;">Keterangan</th>
-                <th style="width: 6%; text-align: center;">Aksi</th>
+                <th style="width: 50%;">Barang (Kode & Nama)</th>
+                <th style="width: 25%;">Qty Masuk (Koreksi)</th>
+                <th style="width: 17%;">Kondisi</th>
+                <th style="width: 8%; text-align: center;">Aksi</th>
               </tr>
             </thead>
             <tbody id="receipt-items-tbody">
               <?php if (empty($receipt['items'])): ?>
                 <tr id="empty-receipt-row">
-                  <td colspan="6" class="text-center text-muted" style="padding: 2rem;">
+                  <td colspan="4" class="text-center text-muted" style="padding: 2rem;">
                     Tidak ada barang dalam dokumen penerimaan ini.
                   </td>
                 </tr>
@@ -174,16 +172,7 @@ include __DIR__ . '/../layout/header.php';
                           </span>
                         <?php endif; ?>
                       </div>
-                    </td>
-
-                    <td>
-                      <select name="items[<?= $idx ?>][warehouse_location_id]" class="form-select" style="font-size: 0.85rem;">
-                        <?php foreach ($locations as $loc): ?>
-                          <option value="<?= $loc['id'] ?>" <?= ((int) ($it['warehouse_location_id'] ?? 0) === (int) $loc['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($loc['code']) ?><?= !empty($loc['zone']) ? ' - ' . htmlspecialchars($loc['zone']) : '' ?><?= !empty($loc['rack']) ? ' (' . htmlspecialchars($loc['rack']) . ')' : '' ?>
-                          </option>
-                        <?php endforeach; ?>
-                      </select>
+                      <input type="hidden" name="items[<?= $idx ?>][warehouse_location_id]" value="<?= $it['warehouse_location_id'] ?? 1 ?>">
                     </td>
 
                     <td>
@@ -214,10 +203,6 @@ include __DIR__ . '/../layout/header.php';
                         <option value="damaged" <?= ($it['condition'] ?? '') === 'damaged' ? 'selected' : '' ?>>Rusak Fisik</option>
                         <option value="other" <?= ($it['condition'] ?? '') === 'other' ? 'selected' : '' ?>>Lainnya</option>
                       </select>
-                    </td>
-
-                    <td>
-                      <input type="text" name="items[<?= $idx ?>][notes]" class="form-control" style="font-size: 0.85rem;" value="<?= htmlspecialchars($it['notes'] ?? '') ?>" placeholder="Catatan...">
                     </td>
 
                     <td class="text-center">
@@ -444,11 +429,7 @@ function addItemToReceiptTable(item) {
           <i class="bi bi-plus-circle me-1"></i> Barang Baru Ditambahkan
         </span>
       </div>
-    </td>
-    <td>
-      <select name="items[${rowCount}][warehouse_location_id]" class="form-select" style="font-size: 0.85rem;">
-        ${locOptionsHtml}
-      </select>
+      <input type="hidden" name="items[${rowCount}][warehouse_location_id]" value="1">
     </td>
     <td>
       <div class="input-group">
@@ -462,9 +443,6 @@ function addItemToReceiptTable(item) {
         <option value="damaged">Rusak Fisik</option>
         <option value="other">Lainnya</option>
       </select>
-    </td>
-    <td>
-      <input type="text" name="items[${rowCount}][notes]" class="form-control" style="font-size: 0.85rem;" placeholder="Catatan...">
     </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)" title="Hapus">

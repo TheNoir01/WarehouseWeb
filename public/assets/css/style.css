@@ -102,16 +102,20 @@ a:hover {
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
-  background: var(--primary);
+  width: 36px;
+  height: 36px;
+  background: transparent;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-weight: bold;
-  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-name {
@@ -312,13 +316,17 @@ i.bi {
 .brand-mini-icon {
   width: 28px;
   height: 28px;
-  background: var(--primary);
-  border-radius: 6px;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.brand-mini-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-mini-text {
@@ -348,59 +356,56 @@ i.bi {
   gap: 0.75rem;
 }
 
-/* Zoom Controls in Topbar */
-.zoom-controls {
+/* Zoom Dropdown in Topbar */
+.zoom-dropdown-container {
   display: inline-flex;
   align-items: center;
   background: #f8fafc;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #cbd5e1;
   border-radius: 6px;
-  padding: 2px 4px;
-  gap: 2px;
-}
-
-.btn-zoom {
-  background: transparent;
-  border: none;
-  color: #475569;
-  font-size: 0.95rem;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  padding: 0 0.5rem 0 0.6rem;
+  height: 32px;
+  gap: 0.35rem;
   transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.btn-zoom:hover {
-  background: #e2e8f0;
-  color: var(--primary);
+.zoom-dropdown-container:hover,
+.zoom-dropdown-container:focus-within {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
-.btn-zoom:active {
-  transform: scale(0.92);
+.zoom-dropdown-container i.bi {
+  color: #64748b;
+  font-size: 0.88rem;
+  pointer-events: none;
+  flex-shrink: 0;
+  margin-right: 0 !important;
 }
 
-.zoom-value {
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-family: monospace;
-  min-width: 44px;
-  text-align: center;
-  user-select: none;
-  color: #334155;
-  padding: 3px 4px;
-  border-radius: 4px;
+.zoom-dropdown-container:hover i.bi,
+.zoom-dropdown-container:focus-within i.bi {
+  color: #1e40af;
+}
+
+.zoom-select {
+  border: none;
+  background: transparent;
+  color: #1e293b;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  outline: none;
+  padding: 0.2rem 0;
+  font-family: inherit;
 }
 
-.zoom-value:hover {
-  background: #e2e8f0;
-  color: var(--primary);
+.zoom-select option {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 500;
 }
 
 .content-body {
@@ -727,6 +732,21 @@ label {
   white-space: nowrap;
 }
 
+.table th.text-right,
+.table td.text-right {
+  text-align: right;
+}
+
+.table th.text-center,
+.table td.text-center {
+  text-align: center;
+}
+
+.table th.text-left,
+.table td.text-left {
+  text-align: left;
+}
+
 .table th:first-child {
   border-left: 1px solid var(--border);
   border-top-left-radius: 6px;
@@ -794,6 +814,25 @@ label {
 .badge-secondary {
   background: #f1f5f9;
   color: #475569;
+}
+
+/* Company Badges: KJG (Merah Marun) & LNP (Biru Laut) */
+.badge-kjg,
+.badge-company-kjg {
+  background-color: #800020 !important;
+  color: #ffffff !important;
+  border: 1px solid #6b001b !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
+}
+
+.badge-lnp,
+.badge-company-lnp {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0369a1 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
 }
 
 /* Alert Box */
@@ -902,12 +941,16 @@ label {
 }
 
 /* Utilities */
+.text-left {
+  text-align: left !important;
+}
+
 .text-right {
-  text-align: right;
+  text-align: right !important;
 }
 
 .text-center {
-  text-align: center;
+  text-align: center !important;
 }
 
 .text-muted {

@@ -5,6 +5,10 @@ include __DIR__ . '/../layout/header.php';
 $search = $_GET['search'] ?? '';
 $startDate = $_GET['start_date'] ?? '';
 $endDate = $_GET['end_date'] ?? '';
+$perPage = (int)($_GET['per_page'] ?? ($meta['per_page'] ?? 20));
+if (!in_array($perPage, [10, 20, 50, 100])) {
+    $perPage = 20;
+}
 $historyLogs = is_array($historyLogs ?? null) ? $historyLogs : [];
 $meta = is_array($meta ?? null) ? $meta : [];
 ?>
@@ -17,22 +21,6 @@ $meta = is_array($meta ?? null) ? $meta : [];
     <div class="text-muted" style="font-size: 0.85rem;">
       Catatan audit lengkap setiap penambahan dan pembaruan nomor PO serta harga beli barang oleh Purchasing.
     </div>
-  </div>
-  <div class="d-flex gap-1 align-center">
-    <a href="<?= url('receipts') ?>" class="btn btn-secondary btn-sm">
-      <i class="bi bi-box-arrow-in-down me-1"></i>Daftar Barang Masuk
-    </a>
-    <a href="<?= url('items') ?>" class="btn btn-secondary btn-sm">
-      <i class="bi bi-boxes me-1"></i>Daftar Barang
-    </a>
-  </div>
-</div>
-
-<!-- Info Alert: FIFO Safety Confirmation -->
-<div class="alert alert-info d-flex align-center gap-2 mb-2" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 0.8rem 1.1rem;">
-  <i class="bi bi-shield-check" style="font-size: 1.35rem; color: #16a34a; flex-shrink: 0;"></i>
-  <div style="font-size: 0.84rem;">
-    <strong>Integritas FIFO Terlindungi:</strong> Setiap perubahan nomor PO dan harga beli yang tercatat di bawah ini murni bersifat administratif dan harga akuntansi. Tanggal penerimaan fisik barang dan urutan batch FIFO gudang tetap terkunci 100%.
   </div>
 </div>
 
@@ -61,11 +49,21 @@ $meta = is_array($meta ?? null) ? $meta : [];
         <input type="date" name="end_date" class="form-control form-control-sm" value="<?= htmlspecialchars($endDate) ?>" style="font-size: 0.85rem;">
       </div>
 
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">Tampilkan:</label>
+        <select name="per_page" class="form-select form-control-sm" onchange="this.form.submit()" style="font-size: 0.85rem; padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border); background-color: #fff; cursor: pointer;">
+          <option value="10" <?= $perPage == 10 ? 'selected' : '' ?>>10 / hal</option>
+          <option value="20" <?= $perPage == 20 ? 'selected' : '' ?>>20 / hal</option>
+          <option value="50" <?= $perPage == 50 ? 'selected' : '' ?>>50 / hal</option>
+          <option value="100" <?= $perPage == 100 ? 'selected' : '' ?>>100 / hal</option>
+        </select>
+      </div>
+
       <button type="submit" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7;">
         <i class="bi bi-filter me-1"></i>Filter
       </button>
 
-      <?php if (!empty($search) || !empty($startDate) || !empty($endDate)): ?>
+      <?php if (!empty($search) || !empty($startDate) || !empty($endDate) || (isset($_GET['per_page']) && $_GET['per_page'] != 20)): ?>
         <a href="<?= url('receipts/purchasing-history') ?>" class="btn btn-outline btn-sm" title="Reset Pencarian">
           <i class="bi bi-x-circle me-1"></i>Reset
         </a>
@@ -108,7 +106,7 @@ $meta = is_array($meta ?? null) ? $meta : [];
           <?php else: ?>
             <?php foreach ($historyLogs as $log): ?>
               <?php
-                $createdAt = !empty($log['created_at']) ? date('d/m/Y H:i', strtotime($log['created_at'])) . ' WIB' : '-';
+                $createdAt = !empty($log['created_at']) ? date('d/m/Y H:i', strtotime($log['created_at'])) : '-';
                 $entity = $log['entity'] ?? [];
                 $entityType = $entity['type'] ?? '';
                 $oldVals = $log['old_values'] ?? [];
@@ -127,49 +125,19 @@ $meta = is_array($meta ?? null) ? $meta : [];
                 <!-- Waktu -->
                 <td style="white-space: nowrap;">
                   <div style="font-size: 0.85rem; font-weight: 600; color: #334155;">
-                    <i class="bi bi-calendar3 me-1 text-muted"></i><?= $createdAt ?>
+                    <?= $createdAt ?>
                   </div>
-                  <?php if (!empty($log['ip_address'])): ?>
-                    <div class="text-muted" style="font-size: 0.72rem; margin-top: 2px;">
-                      IP: <?= htmlspecialchars($log['ip_address']) ?>
-                    </div>
-                  <?php endif; ?>
                 </td>
 
                 <!-- Referensi Dokumen / Barang -->
                 <td>
                   <?php if ($entityType === 'goods_receipt'): ?>
                     <div>
-                      <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.72rem; font-weight: 700;">
-                        Barang Masuk
-                      </span>
-                      <?php if (!empty($entity['company_code'])): ?>
-                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 0.7rem; font-weight: 700;">
-                          <?= htmlspecialchars($entity['company_code']) ?>
-                        </span>
-                      <?php endif; ?>
-                    </div>
-                    <div style="margin-top: 3px;">
                       <a href="<?= url('receipts/show') ?>&id=<?= $entity['id'] ?>" class="fw-bold" style="font-family: monospace; color: #1d4ed8; text-decoration: none; font-size: 0.92rem;">
                         <?= htmlspecialchars($entity['receipt_number'] ?? "ID #{$entity['id']}") ?>
                       </a>
                     </div>
-                    <?php if (!empty($entity['supplier_name']) && $entity['supplier_name'] !== '-'): ?>
-                      <div class="text-muted" style="font-size: 0.75rem;">
-                        Vendor: <?= htmlspecialchars($entity['supplier_name']) ?>
-                      </div>
-                    <?php endif; ?>
                   <?php elseif ($entityType === 'item'): ?>
-                    <div>
-                      <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.72rem; font-weight: 700;">
-                        Master Barang
-                      </span>
-                      <?php if (!empty($entity['company_code'])): ?>
-                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 0.7rem; font-weight: 700;">
-                          <?= htmlspecialchars($entity['company_code']) ?>
-                        </span>
-                      <?php endif; ?>
-                    </div>
                     <div style="margin-top: 3px;">
                       <a href="<?= url('items/show') ?>&id=<?= $entity['id'] ?>" class="fw-bold" style="color: #0f172a; text-decoration: none; font-size: 0.88rem;">
                         <?= htmlspecialchars($entity['name'] ?? '-') ?>
@@ -200,7 +168,7 @@ $meta = is_array($meta ?? null) ? $meta : [];
                       <span class="text-muted" style="font-size: 0.75rem;">Baru:</span>
                       <?php if (!empty($newPo)): ?>
                         <span style="font-family: monospace; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd;">
-                          <i class="bi bi-file-earmark-check me-1"></i><?= htmlspecialchars($newPo) ?>
+                          <?= htmlspecialchars($newPo) ?>
                         </span>
                       <?php else: ?>
                         <span class="text-muted" style="font-style: italic;">(Dikosongkan)</span>
@@ -209,7 +177,7 @@ $meta = is_array($meta ?? null) ? $meta : [];
                   <?php else: ?>
                     <?php if (!empty($newPo)): ?>
                       <span style="font-family: monospace; font-weight: 600; color: #475569; font-size: 0.82rem;">
-                        <i class="bi bi-receipt me-1 text-muted"></i><?= htmlspecialchars($newPo) ?>
+                        <?= htmlspecialchars($newPo) ?>
                       </span>
                     <?php else: ?>
                       <span class="text-muted" style="font-size: 0.78rem;">(Tidak ada perubahan PO)</span>
@@ -306,47 +274,125 @@ $meta = is_array($meta ?? null) ? $meta : [];
         </tbody>
       </table>
     </div>
+  </div>
 
-    <!-- Pagination -->
-    <?php if (!empty($meta) && ($meta['last_page'] ?? 1) > 1): ?>
-      <?php
-        $cur = (int) ($meta['current_page'] ?? 1);
-        $last = (int) ($meta['last_page'] ?? 1);
-        $total = (int) ($meta['total'] ?? count($historyLogs));
-        $perPage = (int) ($meta['per_page'] ?? 20);
-        $from = ($cur - 1) * $perPage + 1;
-        $to = min($total, $cur * $perPage);
-        $baseParams = $_GET;
-      ?>
-      <div class="d-flex justify-between align-center p-3" style="border-top: 1px solid var(--border); flex-wrap: wrap; gap: 1rem;">
-        <div class="text-muted" style="font-size: 0.85rem;">
-          Menampilkan <?= $from ?> - <?= $to ?> dari <?= $total ?> aktivitas
-        </div>
-        <div class="pagination d-flex gap-1">
-          <?php if ($cur > 1): ?>
-            <?php $baseParams['page'] = $cur - 1; ?>
-            <a href="index.php?<?= http_build_query($baseParams) ?>" class="btn btn-outline btn-sm">
-              <i class="bi bi-chevron-left"></i> Sebelumnya
-            </a>
+  <!-- Card Footer: Pagination & Per Page Selector -->
+  <?php
+    $cur = (int) ($meta['current_page'] ?? 1);
+    $last = (int) ($meta['last_page'] ?? 1);
+    $total = (int) ($meta['total'] ?? count($historyLogs));
+    $perPageNum = (int) ($meta['per_page'] ?? $perPage ?? 20);
+    $from = $total > 0 ? (($cur - 1) * $perPageNum + 1) : 0;
+    $to = min($total, $cur * $perPageNum);
+
+    $baseParams = $_GET;
+    $buildPageUrl = function($pageNum) use ($baseParams, $perPageNum) {
+      $p = $baseParams;
+      $p['r'] = 'receipts/purchasing-history';
+      $p['page'] = $pageNum;
+      $p['per_page'] = $perPageNum;
+      return 'index.php?' . http_build_query($p);
+    };
+  ?>
+  <div class="card-footer d-flex justify-between align-center" style="padding: 0.85rem 1.25rem; background: #ffffff; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); flex-wrap: wrap; gap: 1rem;">
+    <!-- Info & Per Page -->
+    <div class="d-flex align-center gap-3" style="flex-wrap: wrap;">
+      <div class="text-muted" style="font-size: 0.85rem;">
+        <?php if ($total > 0): ?>
+          Menampilkan baris <strong style="color: #0f172a;"><?= number_format($from) ?> - <?= number_format($to) ?></strong> dari total <strong style="color: #0f172a;"><?= number_format($total) ?></strong> aktivitas
+          <?php if ($last > 1): ?>
+            (Halaman <strong style="color: #0f172a;"><?= $cur ?></strong> dari <strong style="color: #0f172a;"><?= $last ?></strong>)
           <?php endif; ?>
-
-          <?php for ($p = max(1, $cur - 2); $p <= min($last, $cur + 2); $p++): ?>
-            <?php $baseParams['page'] = $p; ?>
-            <a href="index.php?<?= http_build_query($baseParams) ?>" class="btn btn-sm <?= $p === $cur ? 'btn-primary' : 'btn-outline' ?>" style="<?= $p === $cur ? 'background-color: #0284c7; border-color: #0284c7;' : '' ?>">
-              <?= $p ?>
-            </a>
-          <?php endfor; ?>
-
-          <?php if ($cur < $last): ?>
-            <?php $baseParams['page'] = $cur + 1; ?>
-            <a href="index.php?<?= http_build_query($baseParams) ?>" class="btn btn-outline btn-sm">
-              Berikutnya <i class="bi bi-chevron-right"></i>
-            </a>
-          <?php endif; ?>
-        </div>
+        <?php else: ?>
+          Menampilkan 0 aktivitas
+        <?php endif; ?>
       </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <?php if ($last > 1): ?>
+      <nav aria-label="Navigasi Halaman">
+        <ul style="display: flex; gap: 5px; align-items: center; margin: 0; padding: 0; list-style: none;">
+          <!-- Previous Button -->
+          <?php if ($cur > 1): ?>
+            <li>
+              <a href="<?= $buildPageUrl($cur - 1) ?>" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #cbd5e1; color: #334155; text-decoration: none;" title="Halaman Sebelumnya">
+                <i class="bi bi-chevron-left"></i> Sebelumnya
+              </a>
+            </li>
+          <?php else: ?>
+            <li>
+              <span class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #e2e8f0; color: #94a3b8; opacity: 0.55; cursor: not-allowed; pointer-events: none;">
+                <i class="bi bi-chevron-left"></i> Sebelumnya
+              </span>
+            </li>
+          <?php endif; ?>
+
+          <!-- Page Numbers -->
+          <?php
+            $startPage = max(1, $cur - 2);
+            $endPage = min($last, $cur + 2);
+
+            if ($startPage > 1) {
+              echo '<li><a href="' . $buildPageUrl(1) . '" class="btn btn-outline btn-sm" style="min-width: 34px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #cbd5e1; color: #334155; text-decoration: none;">1</a></li>';
+              if ($startPage > 2) {
+                echo '<li><span class="text-muted" style="padding: 0 4px; font-size: 0.82rem;">...</span></li>';
+              }
+            }
+
+            for ($p = $startPage; $p <= $endPage; $p++):
+              if ($p === $cur):
+          ?>
+                <li>
+                  <span style="min-width: 34px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; border-radius: 6px; background-color: #0284c7; border: 1px solid #0284c7; color: #ffffff; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25);">
+                    <?= $p ?>
+                  </span>
+                </li>
+          <?php else: ?>
+                <li>
+                  <a href="<?= $buildPageUrl($p) ?>" class="btn btn-outline btn-sm" style="min-width: 34px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #cbd5e1; color: #334155; text-decoration: none;">
+                    <?= $p ?>
+                  </a>
+                </li>
+          <?php
+              endif;
+            endfor;
+
+            if ($endPage < $last) {
+              if ($endPage < $last - 1) {
+                echo '<li><span class="text-muted" style="padding: 0 4px; font-size: 0.82rem;">...</span></li>';
+              }
+              echo '<li><a href="' . $buildPageUrl($last) . '" class="btn btn-outline btn-sm" style="min-width: 34px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #cbd5e1; color: #334155; text-decoration: none;">' . $last . '</a></li>';
+            }
+          ?>
+
+          <!-- Next Button -->
+          <?php if ($cur < $last): ?>
+            <li>
+              <a href="<?= $buildPageUrl($cur + 1) ?>" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #cbd5e1; color: #334155; text-decoration: none;" title="Halaman Selanjutnya">
+                Berikutnya <i class="bi bi-chevron-right"></i>
+              </a>
+            </li>
+          <?php else: ?>
+            <li>
+              <span class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 500; border-radius: 6px; border-color: #e2e8f0; color: #94a3b8; opacity: 0.55; cursor: not-allowed; pointer-events: none;">
+                Berikutnya <i class="bi bi-chevron-right"></i>
+              </span>
+            </li>
+          <?php endif; ?>
+        </ul>
+      </nav>
     <?php endif; ?>
   </div>
 </div>
+
+<script>
+function changePurchasingHistoryPerPage(val) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('per_page', val);
+  url.searchParams.set('page', '1');
+  window.location.href = url.toString();
+}
+</script>
 
 <?php include __DIR__ . '/../layout/footer.php'; ?>

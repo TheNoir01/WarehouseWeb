@@ -213,7 +213,6 @@ include __DIR__ . '/../layout/header.php';
               <th>Waktu</th>
               <th>Jenis</th>
               <th>No Referensi</th>
-              <th>Lokasi</th>
               <th class="text-right">Perubahan</th>
               <th class="text-right">Saldo Akhir</th>
               <th>Operator</th>
@@ -221,14 +220,13 @@ include __DIR__ . '/../layout/header.php';
           </thead>
           <tbody>
             <?php if (empty($item['stock_movements'])): ?>
-              <tr><td colspan="7" class="text-center text-muted">Belum ada riwayat mutasi untuk barang ini.</td></tr>
+              <tr><td colspan="6" class="text-center text-muted">Belum ada riwayat mutasi untuk barang ini.</td></tr>
             <?php else: ?>
               <?php foreach ($item['stock_movements'] as $mov): ?>
                 <tr>
                   <td><?= formatDateTime($mov['created_at']) ?></td>
                   <td><?= renderBadge($mov['movement_type']) ?></td>
                   <td style="font-family: monospace;"><?= htmlspecialchars($mov['reference_number'] ?? '-') ?></td>
-                  <td><?= htmlspecialchars($mov['warehouse_location_id'] ?? '') ?></td>
                   <td class="text-right fw-bold <?= (float)$mov['qty'] > 0 ? 'text-success' : 'text-danger' ?>">
                     <?= ((float)$mov['qty'] > 0 ? '+' : '') . formatQty($mov['qty']) ?>
                   </td>

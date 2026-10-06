@@ -13,10 +13,10 @@ include __DIR__ . '/../layout/header.php';
         <i class="bi bi-file-earmark-excel me-1"></i>Ekspor Excel (.xlsx)
       </a>
       <?php if (canManageMaster()): ?>
-        <a href="<?= url('receipts/create') ?>&company=KJG" class="btn btn-primary btn-sm" style="font-weight: 600;">
+        <a href="<?= url('receipts/create') ?>&company=KJG" class="btn btn-sm" style="font-weight: 600; background-color: #800020; border-color: #6b001b; color: #ffffff;">
           <i class="bi bi-box-arrow-in-down me-1"></i>Barang Masuk PT KJG
         </a>
-        <a href="<?= url('receipts/create') ?>&company=LNP" class="btn btn-success btn-sm" style="font-weight: 600; background-color: #0d9488; border-color: #0d9488;">
+        <a href="<?= url('receipts/create') ?>&company=LNP" class="btn btn-sm" style="font-weight: 600; background-color: #0284c7; border-color: #0369a1; color: #ffffff;">
           <i class="bi bi-box-arrow-in-down me-1"></i>Barang Masuk PT LNP
         </a>
       <?php endif; ?>
@@ -87,7 +87,7 @@ include __DIR__ . '/../layout/header.php';
             <th>Supplier</th>
             <th>Petugas Penerima</th>
             <th style="text-align: center;">Jml Item</th>
-            <th class="text-right" style="white-space: nowrap; width: 1%;">Aksi</th>
+            <th class="text-center" style="white-space: nowrap; width: 1%;">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -114,12 +114,12 @@ include __DIR__ . '/../layout/header.php';
                   </a>
                   <?php if (!empty($gr['po_number'])): ?>
                     <div style="font-size: 0.78rem; margin-top: 3px; color: #0284c7; font-weight: 600;">
-                      <i class="bi bi-file-earmark-text me-1"></i>PO: <?= htmlspecialchars($gr['po_number']) ?>
+                      PO: <?= htmlspecialchars($gr['po_number']) ?>
                     </div>
                   <?php else: ?>
                     <div style="font-size: 0.75rem; margin-top: 3px;">
                       <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 600; padding: 2px 6px;">
-                        <i class="bi bi-clock-history me-1"></i>Belum ada PO
+                        Belum ada PO
                       </span>
                     </div>
                   <?php endif; ?>
@@ -138,11 +138,11 @@ include __DIR__ . '/../layout/header.php';
 
                 <td class="text-center">
                   <?php if ($isLNP): ?>
-                    <span class="badge" style="background-color: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; font-weight: 700; font-size: 0.75rem;">
+                    <span class="badge badge-company-lnp" style="background-color: #0284c7; color: #ffffff; border: 1px solid #0369a1; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">
                       LNP
                     </span>
                   <?php else: ?>
-                    <span class="badge" style="background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700; font-size: 0.75rem;">
+                    <span class="badge badge-company-kjg" style="background-color: #800020; color: #ffffff; border: 1px solid #6b001b; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">
                       KJG
                     </span>
                   <?php endif; ?>

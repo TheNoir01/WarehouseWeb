@@ -8,7 +8,7 @@ include __DIR__ . '/../layout/header.php';
     <h1 style="font-size: 1.35rem; font-weight: 700; color: #0f172a;">
       Dokumen Pengembalian: <?= htmlspecialchars($return['return_number'] ?? '') ?>
     </h1>
-    <span class="badge badge-primary"><?= htmlspecialchars($return['company']['code'] ?? '') ?></span>
+    <?= renderCompanyBadge($return['company']['code'] ?? '') ?>
     <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">
       Tanggal: <?= formatDate($return['returned_date']) ?>
     </span>
@@ -56,7 +56,6 @@ include __DIR__ . '/../layout/header.php';
             <th style="width: 5%;">No</th>
             <th>ID Barang</th>
             <th>Nama Barang & Spesifikasi</th>
-            <th>Lokasi Simpan Rak</th>
             <th class="text-right">Qty Kembali</th>
             <th>Satuan</th>
             <th>Status Pengembalian</th>
@@ -75,11 +74,6 @@ include __DIR__ . '/../layout/header.php';
                 <a href="<?= url('items/show') ?>&id=<?= $itemRow['item']['id'] ?? '' ?>" class="fw-bold">
                   <?= htmlspecialchars($itemRow['item']['name'] ?? '-') ?>
                 </a>
-              </td>
-              <td>
-                <span class="badge badge-secondary">
-                  <?= htmlspecialchars($itemRow['location']['code'] ?? '-') ?>
-                </span>
               </td>
               <td class="text-right fw-bold" style="font-size: 1rem; color: var(--success);">
                 +<?= formatQty($itemRow['qty_returned']) ?>

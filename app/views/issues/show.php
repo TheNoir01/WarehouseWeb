@@ -11,7 +11,7 @@ include __DIR__ . '/../layout/header.php';
     <?php if (!empty($issue['company']['code'])): ?>
       <span class="badge badge-primary"><?= htmlspecialchars($issue['company']['code']) ?></span>
     <?php else: ?>
-      <span class="badge badge-success" style="background: #059669; color: #fff;">Gudang Bersama (FIFO Lintas PT)</span>
+      <span class="badge badge-success" style="background: #059669; color: #fff;">Gudang Bersama</span>
     <?php endif; ?>
     <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">
       Tanggal: <?= formatDate($issue['issued_date']) ?>
@@ -41,7 +41,7 @@ include __DIR__ . '/../layout/header.php';
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
       <div>
         <div class="text-muted" style="font-size: 0.8rem;">Status Kuota</div>
-        <div class="fw-bold"><?= htmlspecialchars($issue['company']['name'] ?? 'Gudang Bersama (FIFO Otomatis 2 PT)') ?></div>
+        <div class="fw-bold"><?= htmlspecialchars($issue['company']['name'] ?? 'Gudang Bersama') ?></div>
       </div>
       <div>
         <div class="text-muted" style="font-size: 0.8rem;">Nama Pengambil</div>
@@ -72,7 +72,6 @@ include __DIR__ . '/../layout/header.php';
             <th style="width: 5%;">No</th>
             <th>ID Barang</th>
             <th>Nama Barang & Spesifikasi</th>
-            <th>Lokasi Asal</th>
             <th class="text-right">Qty Keluar</th>
             <th class="text-right" style="color: #475569;">Qty Dipakai</th>
             <th class="text-right" style="color: var(--success);">Qty Kembali</th>
@@ -91,11 +90,6 @@ include __DIR__ . '/../layout/header.php';
                 <a href="<?= url('items/show') ?>&id=<?= $itemRow['item']['id'] ?? '' ?>" class="fw-bold">
                   <?= htmlspecialchars($itemRow['item']['name'] ?? '-') ?>
                 </a>
-              </td>
-              <td>
-                <span class="badge badge-secondary">
-                  <?= htmlspecialchars($itemRow['location']['code'] ?? '-') ?>
-                </span>
               </td>
               <td class="text-right fw-bold" style="font-size: 1rem; color: var(--danger);">
                 -<?= formatQty($itemRow['qty_issued']) ?> <?= htmlspecialchars($itemRow['item']['unit']['code'] ?? '') ?>
@@ -129,15 +123,12 @@ include __DIR__ . '/../layout/header.php';
       <div style="margin-top: 1.5rem; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 1.25rem;">
         <div class="d-flex justify-between align-center mb-1">
           <h3 style="font-size: 0.95rem; font-weight: 700; color: #166534; margin: 0;">
-            <i class="bi bi-diagram-3-fill me-1" style="color: #16a34a;"></i> Rincian Alokasi Pemotongan Kuota PT (True FIFO by Date)
+            <i class="bi bi-diagram-3-fill me-1" style="color: #16a34a;"></i> Rincian Alokasi Pemotongan Kuota PT
           </h3>
           <span class="badge" style="background: #166534; color: #fff; font-size: 0.75rem;">
             <?= count($issue['allocations']) ?> Batch Terpotong
           </span>
         </div>
-        <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 0.85rem;">
-          Stok dikeluarkan dari wadah fisik menggunakan pemotongan FIFO murni berdasarkan tanggal masuk barang terlama melintasi PT:
-        </p>
         <div class="table-responsive">
           <table class="table" style="background: #fff; border-radius: 6px; overflow: hidden; border: 1px solid #dcfce7;">
             <thead>
@@ -146,7 +137,6 @@ include __DIR__ . '/../layout/header.php';
                 <th>No. Batch</th>
                 <th>PT Pemilik Kuota</th>
                 <th>Barang Terpotong</th>
-                <th>Lokasi Rak</th>
                 <th>Tgl Masuk Batch</th>
                 <th class="text-right">Qty Terpotong</th>
               </tr>
@@ -163,9 +153,6 @@ include __DIR__ . '/../layout/header.php';
                     <span style="font-size: 0.85rem; margin-left: 4px;"><?= htmlspecialchars($alloc['company']['name'] ?? '') ?></span>
                   </td>
                   <td><?= htmlspecialchars($alloc['item']['name'] ?? '-') ?></td>
-                  <td>
-                    <span class="badge badge-secondary"><?= htmlspecialchars($alloc['location']['code'] ?? '-') ?></span>
-                  </td>
                   <td class="text-muted" style="font-size: 0.85rem;"><?= formatDate($alloc['batch']['received_at'] ?? null) ?></td>
                   <td class="text-right fw-bold" style="color: #dc2626; font-size: 0.95rem;">
                     -<?= formatQty($alloc['qty_deducted']) ?> <?= htmlspecialchars($alloc['item']['unit']['code'] ?? '') ?>

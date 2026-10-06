@@ -67,7 +67,7 @@ include __DIR__ . '/../layout/header.php';
             <th>Role / Hak Akses</th>
             <th>PT Terkait</th>
             <th>Status</th>
-            <th class="text-right">Aksi</th>
+            <th class="text-right" style="text-align: right;">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -97,7 +97,7 @@ include __DIR__ . '/../layout/header.php';
                 <span class="badge badge-primary"><?= htmlspecialchars($u['role']['label'] ?? $u['role']['name'] ?? '-') ?></span>
               </td>
               <td>
-                <?= !empty($u['company']) ? htmlspecialchars($u['company']['code']) : '<span class="text-muted">Semua PT</span>' ?>
+                <?= !empty($u['company']) ? renderCompanyBadge($u['company']['code']) : '<span class="text-muted">Semua PT</span>' ?>
               </td>
               <td>
                 <span class="badge <?= ($u['is_active'] ?? true) ? 'badge-success' : 'badge-danger' ?>">

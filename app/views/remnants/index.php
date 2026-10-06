@@ -68,7 +68,7 @@ include __DIR__ . '/../layout/header.php';
                     <?= htmlspecialchars($rem['remnant_code']) ?>
                   </a>
                 </td>
-                <td><span class="badge badge-primary"><?= htmlspecialchars($rem['company']['code'] ?? '-') ?></span></td>
+                <td><?= renderCompanyBadge($rem['company']['code'] ?? '-') ?></td>
                 <td>
                   <a href="<?= url('items/show') ?>&id=<?= $rem['parent_item']['id'] ?? '' ?>" class="fw-bold">
                     <?= htmlspecialchars($rem['parent_item']['name'] ?? '-') ?>
