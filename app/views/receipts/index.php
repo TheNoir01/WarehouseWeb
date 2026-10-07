@@ -244,7 +244,7 @@ include __DIR__ . '/../layout/header.php';
         <i class="bi bi-file-earmark-check-fill" style="font-size: 1.3rem;"></i>
         <div>
           <h5 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff;">Input / Edit No. PO</h5>
-          <span style="font-size: 0.75rem; opacity: 0.9;">Role Purchasing &bull; Tidak Mengubah Antrean FIFO</span>
+          <span style="font-size: 0.75rem; opacity: 0.9;">Role Purchasing</span>
         </div>
       </div>
       <button type="button" onclick="closeQuickPoModal()" style="background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer; line-height: 1; padding: 0.25rem;">&times;</button>
@@ -275,7 +275,7 @@ include __DIR__ . '/../layout/header.php';
         </label>
         <input type="text" name="po_number" id="modalPoNumber" class="form-control" placeholder="Contoh: PO-KJG-2026-09-0012" style="font-family: monospace; font-size: 0.95rem; border-color: #38bdf8;" required autofocus>
         <div class="text-muted mt-1" style="font-size: 0.75rem;">
-          Purchasing dapat menginput atau memperbarui No. PO ini kapan saja tanpa mengubah urutan FIFO fisik.
+          Purchasing dapat menginput atau memperbarui No. PO ini kapan saja.
         </div>
       </div>
 

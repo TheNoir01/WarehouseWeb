@@ -1,5 +1,7 @@
 <?php
 $flash = getFlash();
+$oldEmail = $_SESSION['old_email'] ?? '';
+unset($_SESSION['old_email']);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -78,20 +80,22 @@ $flash = getFlash();
   </div>
 
   <?php if ($flash): ?>
+    <div class="alert alert-<?= $flash['type'] ?>" id="flash-message" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; line-height: 1.45;">
+      <span><?= htmlspecialchars($flash['message']) ?></span>
+      
+    </div>
     <script>
       setTimeout(function(){
-        document.getElementById('flash-message').style.display = 'none';
-      }, 2000);
+        const el = document.getElementById('flash-message');
+        if (el) el.style.display = 'none';
+      }, <?= $flash['type'] === 'success' ? 3000 : 8000 ?>);
     </script>
-    <div class="alert alert-<?= $flash['type'] ?>" id="flash-message">
-      <span><?= htmlspecialchars($flash['message']) ?></span>
-    </div>
   <?php endif; ?>
 
   <form action="<?= url('auth/login-submit') ?>" method="POST">
     <div class="form-group">
       <label for="email"><i class="bi bi-person"></i> Email atau Username</label>
-      <input type="text" id="email" name="email" class="form-control" required placeholder="user@warehouse.com" autofocus>
+      <input type="text" id="email" name="email" class="form-control" required placeholder="user@warehouse.com" value="<?= htmlspecialchars($oldEmail) ?>" autofocus>
     </div>
 
     <div class="form-group">

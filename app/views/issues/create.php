@@ -8,7 +8,6 @@ include __DIR__ . '/../layout/header.php';
     <div class="d-flex align-center gap-1">
       <span><i class="bi bi-box-arrow-up me-1 text-primary"></i> Form Pengeluaran Barang Keluar</span>
       <span class="badge badge-primary" style="font-size: 0.8rem;">
-        <i class="bi bi-clock-history me-1"></i> Sistem FIFO
       </span>
     </div>
     <a href="<?= url('issues') ?>" class="btn btn-outline btn-sm">

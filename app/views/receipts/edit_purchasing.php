@@ -34,10 +34,10 @@ include __DIR__ . '/../layout/header.php';
         </div>
 
         <div>
-          <label class="form-label text-muted" style="font-size: 0.8rem;">Tanggal Masuk (Terkunci FIFO)</label>
+          <label class="form-label text-muted" style="font-size: 0.8rem;">Tanggal Masuk (Terkunci)</label>
           <div class="input-group" style="display: flex;">
             <input type="text" class="form-control" value="<?= formatDate($receipt['received_date']) ?>" readonly style="background: #f1f5f9; font-weight: 500;">
-            <span style="background: #e2e8f0; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-left: none; border-radius: 0 6px 6px 0; color: #64748b;" title="Tanggal terkunci untuk kepatuhan FIFO">
+            <span style="background: #e2e8f0; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-left: none; border-radius: 0 6px 6px 0; color: #64748b;" title="Tanggal terkunci">
               <i class="bi bi-lock-fill"></i>
             </span>
           </div>

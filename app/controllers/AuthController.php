@@ -31,11 +31,13 @@ class AuthController
         ]);
 
         if (!empty($response['success']) && !empty($response['data']['token'])) {
+            unset($_SESSION['old_email']);
             $_SESSION['token'] = $response['data']['token'];
             $_SESSION['user'] = $response['data']['user'];
             $target = ($response['data']['user']['role'] ?? '') === 'purchasing' ? 'items' : 'dashboard';
             redirect($target);
         } else {
+            $_SESSION['old_email'] = $email;
             $msg = $response['message'] ?? 'Login gagal. Periksa kredensial Anda.';
             redirect('login', $msg, 'danger');
         }

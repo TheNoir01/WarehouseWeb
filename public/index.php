@@ -272,6 +272,12 @@ switch ($route) {
         }
         (new UserController())->store();
         break;
+    case 'users/update':
+        if (!canManageUsers()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
+        }
+        (new UserController())->update();
+        break;
 
     default:
         http_response_code(404);

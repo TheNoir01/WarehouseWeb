@@ -509,7 +509,7 @@ function confirmSaveCorrection(e) {
     }
   }
 
-  return confirm('Apakah Anda yakin ingin menyimpan koreksi penerimaan barang ini?\n\nPerubahan kuantitas akan langsung memperbarui saldo stok barang di gudang tanpa mengubah urutan antrean FIFO.');
+  return confirm('Apakah Anda yakin ingin menyimpan koreksi penerimaan barang ini?\n\nPerubahan kuantitas akan langsung memperbarui saldo stok barang di gudang.');
 }
 
 function escapeHtml(str) {
