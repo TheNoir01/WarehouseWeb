@@ -339,7 +339,7 @@ class GoodsReceiptController
     public function editPurchasing(): void
     {
         if (!canManagePurchasing()) {
-            redirect('receipts', 'Akses ditolak. Hanya Purchasing, Kepala Gudang, atau Admin yang dapat mengubah PO & harga.', 'danger');
+            redirect('receipts', 'Akses ditolak. Hanya Purchasing atau Maintenance yang dapat mengubah PO & harga.', 'danger');
         }
 
         $id = $_GET['id'] ?? null;
@@ -351,6 +351,12 @@ class GoodsReceiptController
         }
 
         $receipt = $res['data'];
+
+        // Jika user adalah role purchasing dan dokumen sudah terkunci (atau edit count >= 3)
+        if (isPurchasing() && (!empty($receipt['is_purchasing_locked']) || (int)($receipt['purchasing_edit_count'] ?? 0) >= 3)) {
+            redirect("receipts/show&id={$id}", "Akses edit No. PO & Harga untuk dokumen [{$receipt['receipt_number']}] telah terkunci karena telah diinput/diubah sebanyak 3 kali. Silakan hubungi Admin untuk membuka akses kembali.", 'danger');
+        }
+
         include __DIR__ . '/../views/receipts/edit_purchasing.php';
     }
 
@@ -395,10 +401,40 @@ class GoodsReceiptController
         $redirectUrl = ($returnTo === 'index') ? 'receipts' : "receipts/show&id={$id}";
 
         if (!empty($res['success'])) {
-            redirect($redirectUrl, 'Nomor PO barang masuk berhasil disimpan tanpa mengubah antrean FIFO!');
+            $updatedReceipt = $res['data'] ?? [];
+            $isLocked = !empty($updatedReceipt['is_purchasing_locked']);
+            $count = (int) ($updatedReceipt['purchasing_edit_count'] ?? 0);
+
+            if ($isLocked) {
+                $msg = "Nomor PO dan harga berhasil disimpan. Dokumen ini sekarang TERKUNCI. Silakan hubungi Admin jika butuh perubahan lebih lanjut.";
+                redirect($redirectUrl, $msg, 'warning');
+            } else {
+                redirect($redirectUrl, 'Nomor PO dan harga barang berhasil disimpan.');
+            }
         } else {
             $msg = $res['message'] ?? 'Gagal memperbarui data PO.';
             redirect($redirectUrl, $msg, 'danger');
+        }
+    }
+
+    public function unlockPurchasing(): void
+    {
+        if (!isAdmin() && !isMaintenance()) {
+            redirect('dashboard', 'Akses ditolak: Hanya Admin atau Maintenance yang dapat membuka kunci akses No. PO & Harga.', 'danger');
+        }
+
+        $id = (int) ($_POST['receipt_id'] ?? ($_GET['id'] ?? 0));
+        if (!$id) redirect('receipts');
+
+        $res = $this->api->post("goods-receipts/{$id}/unlock-purchasing", []);
+
+        $returnTo = $_POST['return_to'] ?? ($_GET['return_to'] ?? '');
+        $redirectUrl = ($returnTo === 'history') ? 'receipts/purchasing-history' : "receipts/show&id={$id}";
+
+        if (!empty($res['success'])) {
+            redirect($redirectUrl, $res['message'] ?? 'Akses edit No. PO & Harga berhasil dibuka kembali.');
+        } else {
+            redirect($redirectUrl, $res['message'] ?? 'Gagal membuka kunci akses.', 'danger');
         }
     }
 

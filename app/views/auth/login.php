@@ -87,8 +87,13 @@ unset($_SESSION['old_email']);
     <script>
       setTimeout(function(){
         const el = document.getElementById('flash-message');
-        if (el) el.style.display = 'none';
-      }, <?= $flash['type'] === 'success' ? 3000 : 8000 ?>);
+        if (el) {
+          el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-6px)';
+          setTimeout(function() { el.style.display = 'none'; }, 500);
+        }
+      }, <?= in_array($flash['type'], ['warning', 'success', 'sukses']) ? 10000 : 8000 ?>);
     </script>
   <?php endif; ?>
 
@@ -107,18 +112,6 @@ unset($_SESSION['old_email']);
        Masuk ke Sistem
     </button>
   </form>
-
-  <div class="demo-accounts">
-    <div class="fw-bold mb-1" style="color: #475569;"><i class="bi bi-key-fill"></i> Akun Uji Coba Cepat (Password: password):</div>
-    <div>
-      <span class="demo-btn" onclick="fillDemo('kepala@warehouse.test')">Kepala Gudang</span>
-      <span class="demo-btn" onclick="fillDemo('karyawan@warehouse.test')">Karyawan</span>
-      <span class="demo-btn" onclick="fillDemo('admin@warehouse.test')">Admin</span>
-      <span class="demo-btn" onclick="fillDemo('purchasing@warehouse.test')">Purchasing</span>
-    </div>
-  </div>
-</div>
-
 <script>
 function fillDemo(email) {
   document.getElementById('email').value = email;

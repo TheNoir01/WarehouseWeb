@@ -16,6 +16,36 @@ $currentRoute = $_GET['r'] ?? 'dashboard';
     (function() {
       var z = localStorage.getItem('wh_zoom');
       if (z) document.documentElement.style.zoom = z + '%';
+
+      window.openSidebar = function() {
+        var s = document.getElementById('sidebarMenu');
+        var b = document.getElementById('sidebarBackdrop');
+        if (s) s.classList.add('show');
+        if (b) b.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      };
+
+      window.closeSidebar = function() {
+        var s = document.getElementById('sidebarMenu');
+        var b = document.getElementById('sidebarBackdrop');
+        if (s) s.classList.remove('show');
+        if (b) b.classList.remove('show');
+        document.body.style.overflow = '';
+      };
+
+      var lastToggle = 0;
+      window.toggleSidebar = function() {
+        var now = Date.now();
+        if (now - lastToggle < 200) return;
+        lastToggle = now;
+
+        var s = document.getElementById('sidebarMenu');
+        if (s && s.classList.contains('show')) {
+          window.closeSidebar();
+        } else {
+          window.openSidebar();
+        }
+      };
     })();
   </script>
 </head>
@@ -26,10 +56,10 @@ $currentRoute = $_GET['r'] ?? 'dashboard';
   <div class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <button type="button" class="btn-sidebar-toggle" id="btnToggleSidebar" onclick="window.toggleSidebar && window.toggleSidebar();" title="Menu Pintasan (Garis Tiga)" aria-label="Menu Pintasan">
+        <button type="button" class="btn-sidebar-toggle" id="btnToggleSidebar" onclick="window.toggleSidebar();" title="Menu Pintasan (Garis Tiga)" aria-label="Menu Pintasan">
           <i class="bi bi-list"></i>
         </button>
-        <div class="brand-shortcut d-flex align-center gap-1" style="cursor: pointer;" onclick="window.toggleSidebar ? window.toggleSidebar() : (document.getElementById('btnToggleSidebar') && document.getElementById('btnToggleSidebar').click());" title="Buka Menu Pintasan">
+        <div class="brand-shortcut d-flex align-center gap-1" style="cursor: pointer;" onclick="window.toggleSidebar();" title="Buka Menu Pintasan">
           <div class="brand-mini-icon"><img src="<?= asset('img/kjg.png') ?>" alt="Logo KJG"></div>
         </div>
         <span class="topbar-divider"></span>
@@ -71,8 +101,20 @@ $currentRoute = $_GET['r'] ?? 'dashboard';
 
     <main class="content-body">
       <?php if ($flash): ?>
-        <div class="alert alert-<?= $flash['type'] ?>">
+        <div class="alert alert-<?= $flash['type'] ?>" id="flash-alert" style="transition: opacity 0.5s ease, transform 0.5s ease;">
           <span><?= htmlspecialchars($flash['message']) ?></span>
-          <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-weight:bold;">&times;</button>
+          <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-weight:bold;font-size:1.1rem;line-height:1;">&times;</button>
         </div>
+        <?php if (in_array($flash['type'], ['warning', 'success', 'sukses'])): ?>
+          <script>
+            setTimeout(function() {
+              const el = document.getElementById('flash-alert');
+              if (el) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-6px)';
+                setTimeout(function() { if (el) el.remove(); }, 500);
+              }
+            }, 10000);
+          </script>
+        <?php endif; ?>
       <?php endif; ?>

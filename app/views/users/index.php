@@ -32,8 +32,8 @@ include __DIR__ . '/../layout/header.php';
           <select name="role_id" id="user_role_id" class="form-select" required>
             <?php foreach ($roles as $r): ?>
               <?php
-                // Kepala Gudang tidak dapat membuat user dengan role Maintenance (admin)
-                if (isKepalaGudang() && ($r['name'] ?? '') === 'admin') continue;
+                // Role maintenance hanya dapat dibuat/ditugaskan oleh akun Maintenance
+                if (!isMaintenance() && ($r['name'] ?? '') === 'maintenance') continue;
               ?>
               <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['label'] ?? $r['name']) ?></option>
             <?php endforeach; ?>
@@ -73,10 +73,10 @@ include __DIR__ . '/../layout/header.php';
         <tbody>
           <?php foreach ($users as $u): ?>
             <?php
-              $targetIsMaintenance = ($u['role']['name'] ?? '') === 'admin';
-              // Maintenance (admin) bisa edit semua akun
-              // Kepala gudang bisa edit akun pengguna lainnya, TAPI TIDAK BISA edit akun Maintenance
-              $canEditThisUser = isAdmin() || (isKepalaGudang() && !$targetIsMaintenance);
+              $targetIsMaintenance = ($u['role']['name'] ?? '') === 'maintenance';
+              // Maintenance bisa edit semua akun
+              // Admin dan Kepala gudang bisa edit akun pengguna lainnya, TAPI TIDAK BISA edit akun Maintenance
+              $canEditThisUser = isMaintenance() || ((isAdmin() || isKepalaGudang()) && !$targetIsMaintenance);
               $userJson = htmlspecialchars(json_encode([
                   'id' => $u['id'],
                   'name' => $u['name'],
@@ -110,7 +110,7 @@ include __DIR__ . '/../layout/header.php';
                     <i class="bi bi-pencil-square me-1"></i> Edit
                   </button>
                 <?php else: ?>
-                  <span class="badge" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-size: 0.75rem; padding: 0.35rem 0.5rem;" title="Role Maintenance hanya dapat diedit oleh akun Maintenance">
+                  <span class="badge" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-size: 0.75rem; padding: 0.35rem 0.5rem;" title="Role Maintenance hanya dapat dikelola oleh akun Maintenance">
                     <i class="bi bi-shield-lock-fill me-1"></i> Terkunci
                   </span>
                 <?php endif; ?>
@@ -162,8 +162,8 @@ include __DIR__ . '/../layout/header.php';
           <select name="role_id" id="editUserRoleId" class="form-select" required>
             <?php foreach ($roles as $r): ?>
               <?php
-                // Kepala Gudang tidak dapat memberikan role Maintenance (admin)
-                if (isKepalaGudang() && ($r['name'] ?? '') === 'admin') continue;
+                // Role maintenance hanya dapat diberikan oleh akun Maintenance
+                if (!isMaintenance() && ($r['name'] ?? '') === 'maintenance') continue;
               ?>
               <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['label'] ?? $r['name']) ?></option>
             <?php endforeach; ?>

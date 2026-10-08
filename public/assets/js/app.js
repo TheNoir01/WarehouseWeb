@@ -3,23 +3,32 @@ document.addEventListener('DOMContentLoaded', function () {
   function getSidebar() { return document.getElementById('sidebarMenu'); }
   function getBackdrop() { return document.getElementById('sidebarBackdrop'); }
 
-  window.openSidebar = function() {
-    const s = getSidebar();
-    const b = getBackdrop();
-    if (s) s.classList.add('show');
-    if (b) b.classList.add('show');
-    document.body.style.overflow = 'hidden';
-  };
+  if (!window.openSidebar) {
+    window.openSidebar = function() {
+      const s = getSidebar();
+      const b = getBackdrop();
+      if (s) s.classList.add('show');
+      if (b) b.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    };
+  }
 
-  window.closeSidebar = function() {
-    const s = getSidebar();
-    const b = getBackdrop();
-    if (s) s.classList.remove('show');
-    if (b) b.classList.remove('show');
-    document.body.style.overflow = '';
-  };
+  if (!window.closeSidebar) {
+    window.closeSidebar = function() {
+      const s = getSidebar();
+      const b = getBackdrop();
+      if (s) s.classList.remove('show');
+      if (b) b.classList.remove('show');
+      document.body.style.overflow = '';
+    };
+  }
 
+  let lastToggleTime = 0;
   window.toggleSidebar = function() {
+    const now = Date.now();
+    if (now - lastToggleTime < 250) return; // Prevent double-trigger from inline onclick + event listener
+    lastToggleTime = now;
+
     const s = getSidebar();
     if (s && s.classList.contains('show')) {
       window.closeSidebar();
@@ -28,28 +37,41 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   };
 
+  const btnToggle = document.getElementById('btnToggleSidebar');
   if (btnToggle) {
-    btnToggle.addEventListener('click', function(e) {
-      e.stopPropagation();
+    btnToggle.onclick = function(e) {
+      if (e) e.stopPropagation();
       window.toggleSidebar();
-    });
+    };
   }
 
+  const brandShortcut = document.querySelector('.brand-shortcut');
+  if (brandShortcut) {
+    brandShortcut.onclick = function(e) {
+      if (e) e.stopPropagation();
+      window.toggleSidebar();
+    };
+  }
+
+  const btnClose = document.getElementById('btnCloseSidebar');
   if (btnClose) {
-    btnClose.addEventListener('click', function(e) {
-      e.stopPropagation();
+    btnClose.onclick = function(e) {
+      if (e) e.stopPropagation();
       window.closeSidebar();
-    });
+    };
   }
 
+  const sidebarBackdrop = getBackdrop();
   if (sidebarBackdrop) {
-    sidebarBackdrop.addEventListener('click', function() {
+    sidebarBackdrop.onclick = function(e) {
+      if (e) e.stopPropagation();
       window.closeSidebar();
-    });
+    };
   }
 
   // Close when pressing Escape key
   document.addEventListener('keydown', function(e) {
+    const sidebar = getSidebar();
     if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
       window.closeSidebar();
     }
@@ -92,13 +114,18 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Auto-dismiss alerts after 5 seconds
-  const alerts = document.querySelectorAll('.alert');
-  alerts.forEach(alert => {
+  // Auto-dismiss alert-warning & alert-success (alert-sukses) setelah durasi 10 detik
+  const autoHideAlerts = document.querySelectorAll('.alert-warning, .alert-success, .alert-sukses');
+  autoHideAlerts.forEach(alert => {
+    // Jangan auto-dismiss alert di dalam kotak pengecekan duplikat barang
+    if (alert.closest('#duplicate_warning_box')) return;
+
+    alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease, max-height 0.5s ease';
     setTimeout(() => {
       alert.style.opacity = '0';
-      setTimeout(() => alert.remove(), 300);
-    }, 5000);
+      alert.style.transform = 'translateY(-6px)';
+      setTimeout(() => alert.remove(), 500);
+    }, 10000); // 10 detik
   });
 
   // Modal helpers

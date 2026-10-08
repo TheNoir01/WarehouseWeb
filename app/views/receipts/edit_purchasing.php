@@ -19,6 +19,7 @@ include __DIR__ . '/../layout/header.php';
     </a>
   </div>
 </div>
+
 <form method="POST" action="<?= url('receipts/update-purchasing') ?>" id="purchasingForm">
   <input type="hidden" name="receipt_id" value="<?= $receipt['id'] ?>">
 
@@ -193,7 +194,6 @@ include __DIR__ . '/../layout/header.php';
                 <td>
                   <div style="font-weight: 600; font-size: 0.85rem; color: #334155;"><?= $pDate ?></div>
                   <?php if (!empty($pLog['ip_address'])): ?>
-                    <div class="text-muted" style="font-size: 0.72rem;">IP: <?= htmlspecialchars($pLog['ip_address']) ?></div>
                   <?php endif; ?>
                 </td>
                 <td>

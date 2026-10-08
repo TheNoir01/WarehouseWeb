@@ -98,11 +98,6 @@ class ItemController
                       <td><?= renderBadge($item['stock_status']) ?></td>
                       <td class="text-center" style="white-space: nowrap;">
                         <div class="action-buttons">
-                          <?php if (isPurchasing()): ?>
-                            <button type="button" class="btn-action-price btn-input-price" onclick="openPurchasingModal(<?= $itemJson ?>)" title="Input / Edit No. PO & Harga">
-                              <i class="bi bi-tag me-1"></i>No. PO & Harga
-                            </button>
-                          <?php endif; ?>
                           <?php if (canEditItem()): ?>
                             <button type="button" class="btn-action-edit btn-edit-item" data-item="<?= $itemJson ?>" onclick="openEditItemModal(this)" title="Edit Isi Barang">
                               <i class="bi bi-pencil me-1"></i>Edit

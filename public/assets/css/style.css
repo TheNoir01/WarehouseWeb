@@ -846,7 +846,8 @@ label {
   justify-content: space-between;
 }
 
-.alert-success {
+.alert-success,
+.alert-sukses {
   background: var(--success-bg);
   color: #14532d;
   border: 1px solid #bbf7d0;

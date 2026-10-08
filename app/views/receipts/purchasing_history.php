@@ -89,7 +89,7 @@ $meta = is_array($meta ?? null) ? $meta : [];
             <th style="width: 22%;">Perubahan No. PO</th>
             <th style="width: 28%;">Perubahan Harga Beli</th>
             <th style="width: 12%;">Petugas</th>
-            <th class="text-right" style="width: 6%; white-space: nowrap;">Aksi</th>
+            <th class="text-center" style="width: 6%; white-space: nowrap;">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -153,7 +153,9 @@ $meta = is_array($meta ?? null) ? $meta : [];
 
                 <!-- Perubahan Nomor PO -->
                 <td>
-                  <?php if ($hasPoChange): ?>
+                  <?php if ($log['action'] === 'PURCHASING_UNLOCK'): ?>
+                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 600; font-size: 0.75rem;">Buka Kunci (Unlock)</span>
+                  <?php elseif ($hasPoChange): ?>
                     <div style="font-size: 0.82rem; margin-bottom: 3px;">
                       <span class="text-muted" style="font-size: 0.75rem;">Lama:</span>
                       <?php if (!empty($oldPo)): ?>
@@ -187,7 +189,11 @@ $meta = is_array($meta ?? null) ? $meta : [];
 
                 <!-- Perubahan Harga Beli -->
                 <td>
-                  <?php if (!empty($newItems)): ?>
+                  <?php if ($log['action'] === 'PURCHASING_UNLOCK'): ?>
+                    <div style="font-size: 0.8rem; color: #047857; font-weight: 600;">
+                      <i class="bi bi-shield-check me-1"></i>Akses pengeditan No. PO & Harga dibuka kembali untuk Purchasing
+                    </div>
+                  <?php elseif (!empty($newItems)): ?>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                       <?php foreach ($newItems as $iIdx => $nItem): ?>
                         <?php 
@@ -251,9 +257,11 @@ $meta = is_array($meta ?? null) ? $meta : [];
                   <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem;">
                     <?= htmlspecialchars($userName) ?>
                   </div>
-                  <span class="badge" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.68rem; font-weight: 600;">
-                    Purchasing
-                  </span>
+                  <?php if ($log['action'] === 'PURCHASING_UNLOCK'): ?>
+                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.68rem; font-weight: 600;">Admin</span>
+                  <?php else: ?>
+                    <span class="badge" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.68rem; font-weight: 600;">Purchasing</span>
+                  <?php endif; ?>
                 </td>
 
                 <!-- Aksi -->

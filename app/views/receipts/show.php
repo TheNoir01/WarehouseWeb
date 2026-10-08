@@ -12,13 +12,37 @@ include __DIR__ . '/../layout/header.php';
     <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">
       Tanggal: <?= formatDate($receipt['received_date']) ?>
     </span>
+<?php
+  $isPurchasingLocked = !empty($receipt['is_purchasing_locked']) || (int)($receipt['purchasing_edit_count'] ?? 0) >= 3;
+  $purchasingEditCount = (int)($receipt['purchasing_edit_count'] ?? 0);
+?>
   </div>
   <div class="d-flex gap-1 align-center">
-    <?php if (canManagePurchasing()): ?>
-      <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $receipt['id'] ?>" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
-        <i class="bi bi-tag-fill me-1"></i> Input / Edit PO & Harga
-      </a>
+    <?php if ($isPurchasingLocked): ?>
+      <?php if (isAdmin() || isMaintenance()): ?>
+        <form method="POST" action="<?= url('receipts/unlock-purchasing') ?>" style="display: inline; margin: 0;" onsubmit="return confirm('Buka kunci akses edit No. PO & Harga untuk dokumen ini agar Purchasing dapat mengedit kembali?');">
+          <input type="hidden" name="receipt_id" value="<?= $receipt['id'] ?>">
+        </form>
+      <?php endif; ?>
+
+      <?php if (isPurchasing()): ?>
+        <span class="badge badge-danger" style="padding: 0.5rem 0.8rem; font-size: 0.82rem; font-weight: 600;" title="Akses edit No. PO & harga telah terkunci. Hubungi Admin untuk membuka akses.">
+          <i class="bi bi-lock-fill me-1"></i> PO & Harga Terkunci
+        </span>
+      <?php elseif (isMaintenance()): ?>
+        <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $receipt['id'] ?>" class="btn btn-outline btn-sm" style="font-weight: 600;">
+          <i class="bi bi-tag-fill me-1"></i> Edit PO & Harga (Maintenance)
+        </a>
+      <?php endif; ?>
+
+    <?php else: ?>
+      <?php if (canManagePurchasing()): ?>
+        <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $receipt['id'] ?>" class="btn btn-primary btn-sm" style="background-color: #0284c7; border-color: #0284c7; font-weight: 600;">
+          <i class="bi bi-tag-fill me-1"></i> Input / Edit PO & Harga
+        </a>
+      <?php endif; ?>
     <?php endif; ?>
+
     <button onclick="window.print()" class="btn btn-outline btn-sm">
       <i class="bi bi-printer"></i> Cetak Bukti
     </button>
@@ -27,6 +51,26 @@ include __DIR__ . '/../layout/header.php';
     </a>
   </div>
 </div>
+
+<?php if ($isPurchasingLocked): ?>
+  <div class="alert alert-danger d-flex align-center justify-between mb-2" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 0.85rem 1.15rem;">
+    <div style="font-size: 0.875rem;">
+      <i class="bi bi-lock-fill me-2" style="font-size: 1.15rem; color: #dc2626;"></i>
+      <strong>Akses PO & Harga Terkunci:</strong> Pengeditan No. PO & Harga untuk dokumen ini telah terkunci.
+      <?php if (isPurchasing()): ?>
+        <div style="margin-top: 3px; color: #b91c1c;">Silakan hubungi <strong>Admin</strong> untuk membuka akses kembali.</div>
+      <?php endif; ?>
+    </div>
+    <?php if (isAdmin() || isMaintenance()): ?>
+      <form method="POST" action="<?= url('receipts/unlock-purchasing') ?>" style="margin: 0;" onsubmit="return confirm('Buka kunci akses edit No. PO & Harga untuk dokumen ini?');">
+        <input type="hidden" name="receipt_id" value="<?= $receipt['id'] ?>">
+        <button type="submit" class="btn btn-sm" style="background: #dc2626; color: #fff; font-weight: 600; border: none; white-space: nowrap; padding: 0.45rem 0.85rem;">
+          <i class="bi bi-unlock-fill me-1"></i> Buka Kunci Sekarang
+        </button>
+      </form>
+    <?php endif; ?>
+  </div>
+<?php endif; ?>
 
 <div class="card">
   <div class="card-header d-flex justify-between align-center">
@@ -55,6 +99,12 @@ include __DIR__ . '/../layout/header.php';
           <?php else: ?>
             <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 600; padding: 3px 8px;">
               <i class="bi bi-clock-history me-1"></i>Belum diinput Purchasing
+            </span>
+          <?php endif; ?>
+
+          <?php if ($isPurchasingLocked): ?>
+            <span class="badge badge-danger" style="font-size: 0.72rem; padding: 2px 6px;">
+              <i class="bi bi-lock-fill me-1"></i>Terkunci
             </span>
           <?php endif; ?>
         </div>

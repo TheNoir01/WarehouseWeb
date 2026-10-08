@@ -81,9 +81,15 @@ switch ($route) {
         (new ItemController())->index();
         break;
     case 'items/create':
+        if (!canEditItem()) {
+            redirect('items', 'Akses ditolak: Anda tidak memiliki izin untuk menambah master barang.', 'danger');
+        }
         (new ItemController())->create();
         break;
     case 'items/store':
+        if (!canEditItem()) {
+            redirect('items', 'Akses ditolak: Anda tidak memiliki izin untuk menambah master barang.', 'danger');
+        }
         (new ItemController())->store();
         break;
     case 'items/show':
@@ -93,6 +99,12 @@ switch ($route) {
         (new ItemController())->checkDuplicateAjax();
         break;
     case 'items/ajax-store':
+        if (!canEditItem()) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Akses ditolak.']);
+            exit;
+        }
         (new ItemController())->ajaxStore();
         break;
     case 'items/search-ajax':
@@ -104,19 +116,37 @@ switch ($route) {
         (new GoodsReceiptController())->index();
         break;
     case 'receipts/create':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat barang masuk.', 'danger');
+        }
         (new GoodsReceiptController())->create();
         break;
     case 'receipts/store':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat barang masuk.', 'danger');
+        }
         (new GoodsReceiptController())->store();
         break;
     case 'receipts/show':
         (new GoodsReceiptController())->show();
         break;
     case 'receipts/edit-purchasing':
+        if (!canManagePurchasing()) {
+            redirect('receipts', 'Akses ditolak: Anda tidak memiliki izin untuk mengedit purchasing.', 'danger');
+        }
         (new GoodsReceiptController())->editPurchasing();
         break;
     case 'receipts/update-purchasing':
+        if (!canManagePurchasing()) {
+            redirect('receipts', 'Akses ditolak: Anda tidak memiliki izin untuk mengedit purchasing.', 'danger');
+        }
         (new GoodsReceiptController())->updatePurchasing();
+        break;
+    case 'receipts/unlock-purchasing':
+        if (!isAdmin() && !isMaintenance()) {
+            redirect('dashboard', 'Akses ditolak: Hanya Admin atau Maintenance yang dapat membuka kunci akses No. PO & Harga.', 'danger');
+        }
+        (new GoodsReceiptController())->unlockPurchasing();
         break;
     case 'receipts/purchasing-history':
     case 'purchasing/history':
@@ -131,9 +161,15 @@ switch ($route) {
         (new StockIssueController())->index();
         break;
     case 'issues/create':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat pengeluaran barang.', 'danger');
+        }
         (new StockIssueController())->create();
         break;
     case 'issues/store':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat pengeluaran barang.', 'danger');
+        }
         (new StockIssueController())->store();
         break;
     case 'issues/show':
@@ -148,9 +184,15 @@ switch ($route) {
         (new ReturnController())->index();
         break;
     case 'returns/create':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat retur barang.', 'danger');
+        }
         (new ReturnController())->create();
         break;
     case 'returns/store':
+        if (!canManageOperational()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk membuat retur barang.', 'danger');
+        }
         (new ReturnController())->store();
         break;
     case 'returns/show':
@@ -165,72 +207,60 @@ switch ($route) {
         (new RemnantController())->show();
         break;
     case 'remnants/update':
+        if (!canManageOperational()) {
+            redirect('remnants', 'Akses ditolak: Anda tidak memiliki izin untuk mengubah data sisa material.', 'danger');
+        }
         (new RemnantController())->update();
         break;
 
     // Master Data
     case 'masters/categories':
-        (new MasterController())->categories();
-        break;
     case 'masters/categories-store':
-        (new MasterController())->categoriesStore();
-        break;
     case 'masters/categories-update':
-        (new MasterController())->categoriesUpdate();
-        break;
     case 'masters/categories-destroy':
-        (new MasterController())->categoriesDestroy();
-        break;
     case 'masters/types-store':
-        (new MasterController())->typesStore();
-        break;
     case 'masters/units':
-        (new MasterController())->units();
-        break;
     case 'masters/units-store':
-        (new MasterController())->unitsStore();
-        break;
     case 'masters/units-update':
-        (new MasterController())->unitsUpdate();
-        break;
     case 'masters/units-destroy':
-        (new MasterController())->unitsDestroy();
-        break;
     case 'masters/suppliers':
-        (new MasterController())->suppliers();
-        break;
     case 'masters/suppliers-store':
-        (new MasterController())->suppliersStore();
-        break;
     case 'masters/suppliers-update':
-        (new MasterController())->suppliersUpdate();
-        break;
     case 'masters/suppliers-destroy':
-        (new MasterController())->suppliersDestroy();
-        break;
     case 'masters/locations':
-        (new MasterController())->locations();
-        break;
     case 'masters/locations-store':
-        (new MasterController())->locationsStore();
-        break;
     case 'masters/locations-update':
-        (new MasterController())->locationsUpdate();
-        break;
     case 'masters/locations-destroy':
-        (new MasterController())->locationsDestroy();
-        break;
     case 'masters/companies':
-        (new MasterController())->companies();
-        break;
     case 'masters/companies-store':
-        (new MasterController())->companiesStore();
-        break;
     case 'masters/companies-update':
-        (new MasterController())->companiesUpdate();
-        break;
     case 'masters/companies-destroy':
-        (new MasterController())->companiesDestroy();
+        if (!canManageMaster()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola master data.', 'danger');
+        }
+        switch ($route) {
+            case 'masters/categories': (new MasterController())->categories(); break;
+            case 'masters/categories-store': (new MasterController())->categoriesStore(); break;
+            case 'masters/categories-update': (new MasterController())->categoriesUpdate(); break;
+            case 'masters/categories-destroy': (new MasterController())->categoriesDestroy(); break;
+            case 'masters/types-store': (new MasterController())->typesStore(); break;
+            case 'masters/units': (new MasterController())->units(); break;
+            case 'masters/units-store': (new MasterController())->unitsStore(); break;
+            case 'masters/units-update': (new MasterController())->unitsUpdate(); break;
+            case 'masters/units-destroy': (new MasterController())->unitsDestroy(); break;
+            case 'masters/suppliers': (new MasterController())->suppliers(); break;
+            case 'masters/suppliers-store': (new MasterController())->suppliersStore(); break;
+            case 'masters/suppliers-update': (new MasterController())->suppliersUpdate(); break;
+            case 'masters/suppliers-destroy': (new MasterController())->suppliersDestroy(); break;
+            case 'masters/locations': (new MasterController())->locations(); break;
+            case 'masters/locations-store': (new MasterController())->locationsStore(); break;
+            case 'masters/locations-update': (new MasterController())->locationsUpdate(); break;
+            case 'masters/locations-destroy': (new MasterController())->locationsDestroy(); break;
+            case 'masters/companies': (new MasterController())->companies(); break;
+            case 'masters/companies-store': (new MasterController())->companiesStore(); break;
+            case 'masters/companies-update': (new MasterController())->companiesUpdate(); break;
+            case 'masters/companies-destroy': (new MasterController())->companiesDestroy(); break;
+        }
         break;
 
     // Reports

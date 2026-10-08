@@ -41,7 +41,11 @@ function asset(string $path): string
     if ($base === '/' || $base === '\\') {
         $base = '';
     }
-    return ($base ? $base . '/' : '/') . 'assets/' . $path;
+    
+    $fullPath = dirname(__DIR__, 2) . '/public/assets/' . $path;
+    $version = file_exists($fullPath) ? '?v=' . filemtime($fullPath) : '';
+    
+    return ($base ? $base . '/' : '/') . 'assets/' . $path . $version;
 }
 
 function redirect(string $route, ?string $message = null, string $type = 'success'): void
@@ -81,6 +85,11 @@ function isAuthenticated(): bool
     return !empty($_SESSION['token']) && !empty($_SESSION['user']);
 }
 
+function isMaintenance(): bool
+{
+    return (currentUser()['role'] ?? '') === 'maintenance';
+}
+
 function isKepalaGudang(): bool
 {
     return (currentUser()['role'] ?? '') === 'kepala_gudang';
@@ -104,25 +113,31 @@ function isPurchasing(): bool
 function canManagePurchasing(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['purchasing', 'admin']);
+    return in_array($role, ['purchasing', 'maintenance']);
 }
 
 function canEditPrice(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['purchasing', 'admin']);
+    return in_array($role, ['purchasing', 'maintenance']);
 }
 
 function canEditItem(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);
+    return in_array($role, ['maintenance', 'kepala_gudang', 'karyawan']);
+}
+
+function canManageOperational(): bool
+{
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['maintenance', 'kepala_gudang', 'karyawan']);
 }
 
 function canViewQrCode(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);
+    return in_array($role, ['maintenance', 'admin', 'kepala_gudang', 'karyawan']);
 }
 
 function formatRupiah($amount): string
@@ -133,19 +148,19 @@ function formatRupiah($amount): string
 function canManageMaster(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['admin', 'kepala_gudang', 'karyawan']);
+    return in_array($role, ['maintenance', 'kepala_gudang', 'karyawan']);
 }
 
 function canViewReports(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['admin', 'kepala_gudang']);
+    return in_array($role, ['maintenance', 'admin', 'kepala_gudang']);
 }
 
 function canManageUsers(): bool
 {
     $role = currentUser()['role'] ?? '';
-    return in_array($role, ['admin', 'kepala_gudang']);
+    return in_array($role, ['maintenance', 'admin', 'kepala_gudang']);
 }
 
 function formatQty($qty, ?string $unit = ''): string

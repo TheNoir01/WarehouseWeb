@@ -172,9 +172,23 @@ include __DIR__ . '/../layout/header.php';
 
                 <td class="text-right" style="white-space: nowrap;">
                   <div class="action-buttons">
+                    <?php 
+                      $grIsLocked = !empty($gr['is_purchasing_locked']) || (int)($gr['purchasing_edit_count'] ?? 0) >= 3;
+                    ?>
                     <?php if (canManagePurchasing()): ?>
-                      <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $gr['id'] ?>" class="btn-action-price" title="Input / Edit No. PO & Harga Beli">
-                        <i class="bi bi-tag-fill me-1"></i>PO & Harga
+                      <?php if ($grIsLocked && isPurchasing()): ?>
+                        <span class="badge badge-danger" style="font-size: 0.72rem; padding: 4px 7px;" title="Akses edit No. PO & Harga terkunci. Hubungi Admin.">
+                          <i class="bi bi-lock-fill me-1"></i>Terkunci
+                        </span>
+                      <?php else: ?>
+                        <a href="<?= url('receipts/edit-purchasing') ?>&id=<?= $gr['id'] ?>" class="btn-action-price" title="Input / Edit No. PO & Harga Beli">
+                          <i class="bi bi-tag-fill me-1"></i>PO & Harga
+                        </a>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if ($grIsLocked && (isAdmin() || isMaintenance())): ?>
+                      <a href="<?= url('receipts/show') ?>&id=<?= $gr['id'] ?>" class="btn btn-outline btn-sm" style="color: #b45309; border-color: #fde68a; background: #fffbeb; font-size: 0.75rem; padding: 2px 7px;" title="Klik untuk membuka kunci akses di halaman detail">
+                        <i class="bi bi-unlock-fill me-1"></i>Buka Kunci
                       </a>
                     <?php endif; ?>
                     <?php if (canManageMaster()): ?>
