@@ -89,9 +89,7 @@ $currentRoute = $_GET['r'] ?? 'dashboard';
           <i class="bi bi-shield-check"></i> <?= htmlspecialchars($user['role_label'] ?? $user['role'] ?? 'User') ?>
         </span>
         <?php if (!empty($user['company'])): ?>
-          <span class="badge badge-secondary">
-            <i class="bi bi-building"></i> <?= htmlspecialchars($user['company']['code'] ?? '') ?>
-          </span>
+          <?= renderCompanyBadge($user['company']['code'] ?? '') ?>
         <?php endif; ?>
         <a href="<?= url('auth/logout') ?>" class="btn btn-outline btn-sm">
           <i class="bi bi-box-arrow-right"></i> Keluar

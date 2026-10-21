@@ -21,7 +21,7 @@ include __DIR__ . '/../layout/header.php';
 
 <div class="card">
   <div class="card-header">
-    <span>Informasi Pengembalian Barang (Stock Return)</span>
+    <span>Informasi Pengembalian Barang</span>
     <span class="badge badge-success">DITERIMA GUDANG</span>
   </div>
   <div class="card-body">

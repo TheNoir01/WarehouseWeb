@@ -36,7 +36,7 @@ class ReturnController
         $locations = $this->api->get('locations')['data'] ?? [];
         
         // Load open/partially returned issues
-        $issuesRes = $this->api->get('goods-issues', ['per_page' => 50]);
+        $issuesRes = $this->api->get('goods-issues', ['per_page' => 100]);
         $issues = $issuesRes['data'] ?? [];
 
         include __DIR__ . '/../views/returns/create.php';
@@ -49,21 +49,33 @@ class ReturnController
         foreach ($rawItems as $row) {
             $qty = isset($row['qty_returned']) ? (float) str_replace(',', '.', trim((string) $row['qty_returned'])) : 0.0;
             if (!empty($row['stock_issue_item_id']) && $qty > 0) {
+                $cond = $row['condition'] ?? 'good';
+                if ($cond === 'baik') $cond = 'good';
+                if ($cond === 'potongan') $cond = 'scrap';
+                if ($cond === 'rusak') $cond = 'damaged';
+                if (!in_array($cond, ['good', 'scrap', 'rework', 'damaged'])) {
+                    $cond = 'good';
+                }
+
+                $notes = trim($row['notes'] ?? '');
+
                 $itemPayload = [
                     'stock_issue_item_id' => (int) $row['stock_issue_item_id'],
                     'warehouse_location_id' => (int) $row['warehouse_location_id'],
                     'qty_returned' => $qty,
                     'return_status' => $row['return_status'] ?? 'sisa',
-                    'condition' => $row['condition'] ?? 'good',
-                    'notes' => trim($row['notes'] ?? ''),
+                    'condition' => $cond,
+                    'notes' => $notes ?: null,
                 ];
 
-                if ($itemPayload['return_status'] === 'sisa_material' && !empty($row['material_remnant'])) {
+                if ($itemPayload['return_status'] === 'sisa_material' || !empty($row['material_remnant'])) {
+                    $remData = $row['material_remnant'] ?? [];
                     $itemPayload['material_remnant'] = [
-                        'shape_condition' => $row['material_remnant']['shape_condition'] ?? 'Tidak Beraturan',
-                        'dimension_description' => $row['material_remnant']['dimension_description'] ?? 'Sisa Potongan',
-                        'estimated_area' => !empty($row['material_remnant']['estimated_area']) ? (float)$row['material_remnant']['estimated_area'] : null,
-                        'estimated_weight' => !empty($row['material_remnant']['estimated_weight']) ? (float)$row['material_remnant']['estimated_weight'] : null,
+                        'shape_condition' => $remData['shape_condition'] ?? 'Sisa Potongan',
+                        'dimension_description' => !empty($remData['dimension_description']) ? $remData['dimension_description'] : ($notes ?: 'Sisa Potongan Material'),
+                        'estimated_area' => !empty($remData['estimated_area']) ? (float)$remData['estimated_area'] : null,
+                        'estimated_weight' => !empty($remData['estimated_weight']) ? (float)$remData['estimated_weight'] : null,
+                        'notes' => $notes ?: null,
                     ];
                 }
 

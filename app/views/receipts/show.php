@@ -15,9 +15,25 @@ include __DIR__ . '/../layout/header.php';
 <?php
   $isPurchasingLocked = !empty($receipt['is_purchasing_locked']) || (int)($receipt['purchasing_edit_count'] ?? 0) >= 3;
   $purchasingEditCount = (int)($receipt['purchasing_edit_count'] ?? 0);
+
+  $isKaryawanLocked = !empty($receipt['is_karyawan_locked']) || (int)($receipt['karyawan_edit_count'] ?? 0) >= 3;
+  $karyawanEditCount = (int)($receipt['karyawan_edit_count'] ?? 0);
 ?>
   </div>
-  <div class="d-flex gap-1 align-center">
+  <div class="d-flex gap-1 align-center" style="flex-wrap: wrap;">
+    <!-- Tombol Koreksi Penerimaan (Karyawan / Kepala Gudang / Admin) -->
+    <?php if (canEditGoodsReceipt()): ?>
+      <?php if (isKaryawan() && $isKaryawanLocked): ?>
+        <span class="badge" style="padding: 0.5rem 0.8rem; font-size: 0.82rem; font-weight: 600; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;" title="Koreksi penerimaan telah terkunci (3x edit). Hubungi Kepala Gudang atau Admin.">
+          <i class="bi bi-lock-fill me-1"></i> Koreksi Terkunci (3/3)
+        </span>
+      <?php else: ?>
+        <a href="<?= url('receipts/edit') ?>&id=<?= $receipt['id'] ?>" class="btn btn-warning btn-sm" style="color: #fff; background: #f59e0b; border-color: #f59e0b; font-weight: 600;" title="Koreksi barang masuk jika ada kesalahan penginputan">
+          <i class="bi bi-pencil-square me-1"></i> Koreksi Penerimaan <?= (isKaryawan() && $karyawanEditCount > 0) ? "({$karyawanEditCount}/3)" : '' ?>
+        </a>
+      <?php endif; ?>
+    <?php endif; ?>
+
     <?php if ($isPurchasingLocked): ?>
       <?php if (isAdmin() || isMaintenance()): ?>
         <form method="POST" action="<?= url('receipts/unlock-purchasing') ?>" style="display: inline; margin: 0;" onsubmit="return confirm('Buka kunci akses edit No. PO & Harga untuk dokumen ini agar Purchasing dapat mengedit kembali?');">
@@ -51,6 +67,29 @@ include __DIR__ . '/../layout/header.php';
     </a>
   </div>
 </div>
+
+<!-- Alert jika Dokumen Terkunci untuk Karyawan -->
+<?php if ($isKaryawanLocked): ?>
+  <div class="alert alert-warning d-flex align-center justify-between mb-2" style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 0.85rem 1.15rem;">
+    <div style="font-size: 0.875rem;">
+      <i class="bi bi-lock-fill me-2" style="font-size: 1.15rem; color: #d97706;"></i>
+      <strong>Dokumen Terkunci untuk Role Karyawan:</strong> Dokumen penerimaan ini telah diubah sebanyak 3 kali oleh role Karyawan.
+      <?php if (isKaryawan()): ?>
+        <div style="margin-top: 3px; color: #b45309;">Silakan hubungi <strong>Kepala Gudang</strong> atau <strong>Admin</strong> untuk membuka kunci jika ada koreksi data tambahan.</div>
+      <?php else: ?>
+        <div style="margin-top: 3px; color: #b45309;">Sebagai Kepala Gudang / Admin, Anda tetap dapat mengedit dokumen ini atau membuka kunci agar role Karyawan dapat mengedit kembali.</div>
+      <?php endif; ?>
+    </div>
+    <?php if (canUnlockGoodsReceipt()): ?>
+      <form method="POST" action="<?= url('receipts/unlock-karyawan') ?>" style="margin: 0;" onsubmit="return confirm('Buka kunci dokumen penerimaan ini agar role Karyawan dapat mengedit kembali?');">
+        <input type="hidden" name="receipt_id" value="<?= $receipt['id'] ?>">
+        <button type="submit" class="btn btn-sm" style="background: #d97706; color: #fff; font-weight: 600; border: none; white-space: nowrap; padding: 0.45rem 0.85rem; cursor: pointer;">
+          <i class="bi bi-unlock-fill me-1"></i> Buka Kunci Dokumen
+        </button>
+      </form>
+    <?php endif; ?>
+  </div>
+<?php endif; ?>
 
 <?php if ($isPurchasingLocked): ?>
   <div class="alert alert-danger d-flex align-center justify-between mb-2" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 0.85rem 1.15rem;">
@@ -337,5 +376,79 @@ include __DIR__ . '/../layout/header.php';
     <?php endif; ?>
   </div>
 </div>
+
+<!-- Riwayat Koreksi Penerimaan Barang (Karyawan / Kepala Gudang) -->
+<?php if (!empty($receipt['correction_logs'])): ?>
+<div class="card mt-3">
+  <div class="card-header d-flex justify-between align-center" style="border-left: 4px solid #f59e0b;">
+    <span style="font-weight: 700; color: #0f172a;">
+      <i class="bi bi-clock-history me-1 text-warning"></i> Riwayat Koreksi Dokumen Penerimaan Barang
+    </span>
+    <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 600; border: 1px solid #fde68a;">
+      <?= count($receipt['correction_logs']) ?> Catatan Koreksi
+    </span>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table" style="vertical-align: middle; margin-bottom: 0;">
+        <thead style="background: #f8fafc;">
+          <tr>
+            <th style="width: 18%;">Waktu</th>
+            <th style="width: 20%;">Aksi</th>
+            <th>Rincian Perubahan / Koreksi</th>
+            <th style="width: 20%;">Petugas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($receipt['correction_logs'] as $cLog): ?>
+            <?php
+              $cAction = $cLog['action'] ?? '';
+              $cUser = $cLog['user']['name'] ?? '-';
+              $cTime = $cLog['created_at'] ?? '';
+              $cNewVals = $cLog['new_values'] ?? [];
+              $cOldVals = $cLog['old_values'] ?? [];
+              if (is_string($cNewVals)) $cNewVals = json_decode($cNewVals, true) ?: [];
+              if (is_string($cOldVals)) $cOldVals = json_decode($cOldVals, true) ?: [];
+            ?>
+            <tr>
+              <td style="font-size: 0.82rem; color: #64748b; white-space: nowrap;">
+                <i class="bi bi-calendar3 me-1"></i><?= formatDateTime($cTime) ?>
+              </td>
+              <td>
+                <?php if ($cAction === 'GOODS_RECEIPT_CORRECTION'): ?>
+                  <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem;">
+                    <i class="bi bi-pencil-square me-1"></i>Koreksi Data
+                  </span>
+                  <?php if (!empty($cNewVals['is_karyawan_locked'])): ?>
+                    <span class="badge badge-danger" style="font-size: 0.7rem; margin-top: 3px; display: inline-block;">
+                      <i class="bi bi-lock-fill me-1"></i>Otomatis Terkunci
+                    </span>
+                  <?php endif; ?>
+                <?php elseif ($cAction === 'GOODS_RECEIPT_UNLOCK'): ?>
+                  <span class="badge" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.75rem;">
+                    <i class="bi bi-unlock-fill me-1"></i>Buka Kunci Akses
+                  </span>
+                <?php else: ?>
+                  <span class="badge badge-secondary"><?= htmlspecialchars($cAction) ?></span>
+                <?php endif; ?>
+              </td>
+              <td style="font-size: 0.85rem; color: #334155;">
+                <?php if ($cAction === 'GOODS_RECEIPT_UNLOCK'): ?>
+                  <div>Akses koreksi untuk role Karyawan berhasil dibuka kembali oleh <strong><?= htmlspecialchars($cUser) ?></strong>. Counter edit di-reset ke 0.</div>
+                <?php else: ?>
+                  <div>Dokumen penerimaan dikoreksi (Perubahan ke-<?= (int)($cNewVals['karyawan_edit_count'] ?? 0) ?>). Saldo stok dan mutasi telah disesuaikan secara otomatis.</div>
+                <?php endif; ?>
+              </td>
+              <td>
+                <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem;"><?= htmlspecialchars($cUser) ?></div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../layout/footer.php'; ?>

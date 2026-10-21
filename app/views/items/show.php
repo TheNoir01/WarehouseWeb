@@ -6,7 +6,8 @@ include __DIR__ . '/../layout/header.php';
 <div class="d-flex justify-between align-center mb-2">
   <div>
     <h1 style="font-size: 1.4rem; font-weight: 700; color: #0f172a;"><?= htmlspecialchars($item['name']) ?></h1>
-    <span class="badge badge-primary"><?= htmlspecialchars($item['company']['name'] ?? '') ?></span>
+    <?= renderCompanyBadge($item['company']['code'] ?? '') ?>
+    <span style="font-weight: 600; margin-left: 0.25rem; font-size: 0.85rem;"><?= htmlspecialchars($item['company']['name'] ?? '') ?></span>
     <span style="font-family: monospace; font-weight: bold; margin-left: 0.5rem;"><?= htmlspecialchars($item['item_code']) ?></span>
   </div>
   <div class="d-flex gap-1 align-center">
@@ -44,12 +45,6 @@ include __DIR__ . '/../layout/header.php';
             <td class="text-muted">Harga Beli</td>
             <td class="fw-bold" style="font-family: monospace; color: #0284c7; font-size: 0.95rem;">
               <?= (float)($item['purchase_price'] ?? 0) > 0 ? formatRupiah($item['purchase_price']) : '<span class="text-muted" style="font-style: italic; font-weight: normal;">Belum diinput</span>' ?>
-            </td>
-          </tr>
-          <tr>
-            <td class="text-muted">No. PO</td>
-            <td class="fw-bold" style="font-family: monospace; color: #0284c7; font-size: 0.95rem;">
-              <?= !empty($item['po_number']) ? htmlspecialchars($item['po_number']) : '<span class="text-muted" style="font-style: italic; font-weight: normal;">Belum diinput</span>' ?>
             </td>
           </tr>
           <tr>
@@ -122,7 +117,7 @@ include __DIR__ . '/../layout/header.php';
       <div class="card-body text-center">
         <div id="printable-qr-area" style="display: inline-block; padding: 14px; background: #ffffff; border: 2px solid #cbd5e1; border-radius: 10px; margin-bottom: 0.75rem;">
           <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 2px;">
-            [<?= htmlspecialchars($item['company']['code'] ?? '') ?>] <?= htmlspecialchars($item['company']['name'] ?? '') ?>
+            <?= !empty($item['company']['code']) ? '[' . htmlspecialchars($item['company']['code']) . '] ' : '' ?><?= htmlspecialchars($item['company']['name'] ?? '') ?>
           </div>
           <div style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
             <?= htmlspecialchars($item['name']) ?>
@@ -295,8 +290,6 @@ function openPurchasingModal(itemData) {
   document.getElementById('modalCompanyCode').innerText = itemData.company_code || '';
   document.getElementById('modalItemStock').innerText = 'Stok: ' + (itemData.total_stock || 0) + ' ' + (itemData.unit || '');
   document.getElementById('modalPurchasePrice').value = (itemData.purchase_price && itemData.purchase_price > 0) ? itemData.purchase_price : '';
-  const poEl = document.getElementById('modalPoNumber');
-  if (poEl) poEl.value = itemData.po_number || '';
   const notesEl = document.getElementById('modalPriceNotes');
   if (notesEl) notesEl.value = '';
   
@@ -377,15 +370,6 @@ function closeEditItemModal() {
           </div>
         </div>
 
-        <!-- Input No. PO -->
-        <div class="form-group mb-3">
-          <label class="form-label fw-bold" for="modalPoNumber" style="color: #0369a1; font-size: 0.9rem;">
-            <i class="bi bi-receipt me-1"></i> Nomor PO (Purchase Order)
-          </label>
-          <input type="text" name="po_number" id="modalPoNumber" class="form-control" 
-                 placeholder="Contoh: PO-KJG-2026-001" style="font-family: monospace; font-weight: 600; font-size: 0.95rem; border-color: #7dd3fc;" autocomplete="off">
-          <small class="text-muted">Nomor PO pembelian barang dari supplier terkait.</small>
-        </div>
 
         <!-- Input Harga Satuan -->
         <div class="form-group mb-3">

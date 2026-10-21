@@ -139,6 +139,10 @@ class GoodsReceiptController
         if (!empty($deliveryOrderNumber)) {
             $payload['delivery_order_number'] = $deliveryOrderNumber;
         }
+        $poNumber = trim($_POST['po_number'] ?? '');
+        if (!empty($poNumber)) {
+            $payload['po_number'] = $poNumber;
+        }
 
         $res = $this->api->post('goods-receipts', $payload);
 
@@ -162,6 +166,115 @@ class GoodsReceiptController
 
         $receipt = $res['data'];
         include __DIR__ . '/../views/receipts/show.php';
+    }
+
+    public function edit(): void
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+        if (!$id) redirect('receipts');
+
+        $res = $this->api->get("goods-receipts/{$id}");
+        if (empty($res['success'])) {
+            redirect('receipts', 'Dokumen penerimaan tidak ditemukan.', 'danger');
+        }
+
+        $receipt = $res['data'];
+        $isLocked = !empty($receipt['is_karyawan_locked']) || (int)($receipt['karyawan_edit_count'] ?? 0) >= 3;
+
+        // If user is role karyawan and document is locked, block access!
+        if (isKaryawan() && $isLocked) {
+            redirect("receipts/show&id={$id}", 'Dokumen ini telah terkunci karena telah diubah 3 kali oleh role Karyawan. Hanya Kepala Gudang atau Admin yang dapat membuka kunci dokumen ini.', 'danger');
+        }
+
+        $locationsRes = $this->api->get('locations');
+        $locations = $locationsRes['data'] ?? [];
+
+        include __DIR__ . '/../views/receipts/edit.php';
+    }
+
+    public function update(): void
+    {
+        $id = (int) ($_POST['receipt_id'] ?? 0);
+        if (!$id) redirect('receipts');
+
+        $supplierName = trim($_POST['supplier_name'] ?? '');
+        $deliveryOrderNumber = trim($_POST['delivery_order_number'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
+
+        $rawItems = $_POST['items'] ?? [];
+        $items = [];
+        foreach ($rawItems as $row) {
+            $qty = isset($row['qty']) ? (float) str_replace(',', '.', trim((string) $row['qty'])) : 0.0;
+            if (!empty($row['item_id']) && $qty > 0) {
+                $itemEntry = [
+                    'item_id' => (int) $row['item_id'],
+                    'qty' => $qty,
+                    'condition' => $row['condition'] ?? 'good',
+                    'notes' => trim($row['notes'] ?? ''),
+                    'warehouse_location_id' => !empty($row['warehouse_location_id']) ? (int) $row['warehouse_location_id'] : 1,
+                ];
+                if (!empty($row['id'])) {
+                    $itemEntry['id'] = (int) $row['id'];
+                }
+                $items[] = $itemEntry;
+            }
+        }
+
+        if (empty($items)) {
+            redirect("receipts/edit&id={$id}", 'Harap masukkan minimal 1 barang dengan kuantitas valid.', 'danger');
+        }
+
+        $poNumber = trim($_POST['po_number'] ?? '');
+
+        $payload = [
+            'supplier_name' => $supplierName,
+            'delivery_order_number' => $deliveryOrderNumber,
+            'po_number' => $poNumber ?: null,
+            'notes' => $notes,
+            'items' => $items,
+        ];
+
+        $res = $this->api->put("goods-receipts/{$id}", $payload);
+
+        if (!empty($res['success'])) {
+            $updatedReceipt = $res['data'] ?? [];
+            $isLocked = !empty($updatedReceipt['is_karyawan_locked']);
+            $count = (int) ($updatedReceipt['karyawan_edit_count'] ?? 0);
+
+            if ($isLocked && isKaryawan()) {
+                redirect("receipts/show&id={$id}", "Koreksi penerimaan berhasil disimpan. Dokumen ini sekarang TERKUNCI untuk Karyawan karena telah mencapai batas 3 kali perubahan. Hubungi Kepala Gudang atau Admin jika ada kesalahan lebih lanjut.", 'warning');
+            } else {
+                $msg = 'Koreksi dokumen penerimaan berhasil disimpan dan saldo stok telah disesuaikan!';
+                if (isKaryawan()) {
+                    $msg .= " (Perubahan ke-{$count} dari batas 3 kali).";
+                }
+                redirect("receipts/show&id={$id}", $msg);
+            }
+        } else {
+            $msg = $res['message'] ?? 'Gagal memperbarui dokumen penerimaan barang.';
+            redirect("receipts/edit&id={$id}", $msg, 'danger');
+        }
+    }
+
+    public function unlockKaryawan(): void
+    {
+        if (!canUnlockGoodsReceipt()) {
+            redirect('receipts', 'Akses ditolak: Hanya Kepala Gudang atau Admin yang dapat membuka kunci dokumen penerimaan.', 'danger');
+        }
+
+        $id = (int) ($_POST['receipt_id'] ?? ($_GET['id'] ?? 0));
+        if (!$id) redirect('receipts');
+
+        $res = $this->api->post("goods-receipts/{$id}/unlock-karyawan", []);
+
+        $returnTo = $_POST['return_to'] ?? ($_GET['return_to'] ?? '');
+        $redirectUrl = ($returnTo === 'index') ? 'receipts' : "receipts/show&id={$id}";
+
+        if (!empty($res['success'])) {
+            redirect($redirectUrl, $res['message'] ?? 'Kunci dokumen penerimaan berhasil dibuka kembali untuk role Karyawan.');
+        } else {
+            redirect($redirectUrl, $res['message'] ?? 'Gagal membuka kunci dokumen.', 'danger');
+        }
     }
 
     public function exportExcel(): void
@@ -219,7 +332,17 @@ class GoodsReceiptController
 
             $docNum = $r['receipt_number'] ?? '-';
             $supplier = $r['supplier']['name'] ?? $r['supplier_name'] ?? '-';
-            $ref = $r['delivery_order_number'] ?? '-';
+            $sj = trim((string)($r['delivery_order_number'] ?? ''));
+            $po = trim((string)($r['po_number'] ?? ''));
+            if ($sj !== '' && $po !== '') {
+                $ref = "SJ: {$sj} | PO: {$po}";
+            } elseif ($po !== '') {
+                $ref = "PO: {$po}";
+            } elseif ($sj !== '') {
+                $ref = "SJ: {$sj}";
+            } else {
+                $ref = '-';
+            }
             $receiver = $r['received_by']['name'] ?? '-';
 
             $items = $r['items'] ?? [];

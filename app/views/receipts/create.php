@@ -3,7 +3,7 @@ $targetCompanyCode = $targetCompany['code'] ?? 'KJG';
 $targetCompanyName = $targetCompany['name'] ?? 'PT Karunia Jaya Global';
 $targetCompanyId = $targetCompany['id'] ?? 5;
 $isLNP = ($targetCompanyCode === 'LNP');
-$themeColor = $isLNP ? '#0d9488' : '#2563eb';
+$themeColor = $isLNP ? '#0284c7' : '#990000';
 $otherCompanyCode = $isLNP ? 'KJG' : 'LNP';
 
 $pageTitle = 'Input Barang Masuk - ' . $targetCompanyName . ' (' . $targetCompanyCode . ')';
@@ -109,10 +109,10 @@ include __DIR__ . '/../layout/header.php';
           <div class="form-group" style="flex: 1;">
             <label for="po_number"><i class="bi bi-receipt me-1"></i> No. PO (Purchase Order) (Opsional)</label>
             <input type="text" name="po_number" id="po_number" class="form-control" placeholder="Contoh: PO-KJG-2026/09/001">
-            <small class="text-muted" style="font-size: 0.75rem; display: block; margin-top: 2px;">Bisa dikosongkan jika belum ada; Purchasing dapat input kapan saja.</small>
+            <small class="text-muted" style="font-size: 0.75rem; display: block; margin-top: 2px;">Bisa dikosongkan jika belum ada.</small>
           </div>
           <div class="form-group" style="flex: 1.5;">
-            <label for="notes"><i class="bi bi-chat-left-dots me-1"></i> Catatan Penerimaan (Opsional)</label>
+            <label for="notes"><i class="bi bi-chat-left-dots me-1"></i> Catatan Penerimaan (Opsional)</label>  
             <input type="text" name="notes" id="notes" class="form-control" placeholder="Keterangan pengiriman, ekspedisi, dsb.">
           </div>
         </div>
@@ -161,11 +161,6 @@ include __DIR__ . '/../layout/header.php';
                     </div>
                     <div style="font-size: 0.8rem; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                       <span>Satuan: <strong style="color: #2563eb;"><?= htmlspecialchars($newItem['unit']['code'] ?? '-') ?></strong></span>
-                      <?php if (!empty($suppText)): ?>
-                        <span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
-                          <i class="bi bi-truck me-1"></i> Supplier: <?= htmlspecialchars($suppText) ?>
-                        </span>
-                      <?php endif; ?>
                     </div>
                     <input type="hidden" name="items[0][item_id]" value="<?= $newItem['id'] ?>">
                     <input type="hidden" name="items[0][warehouse_location_id]" value="<?= $locations[0]['id'] ?? 1 ?>">

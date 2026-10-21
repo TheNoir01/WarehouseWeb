@@ -112,6 +112,7 @@ unset($_SESSION['old_email']);
        Masuk ke Sistem
     </button>
   </form>
+</div>
 <script>
 function fillDemo(email) {
   document.getElementById('email').value = email;

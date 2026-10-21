@@ -41,7 +41,13 @@ $user = currentUser();
         </a>
       </li>
 
-      <li class="menu-category">Laporan & Audit</li>
+      <li class="menu-category">Operasional & Laporan</li>
+
+      <li class="<?= (str_starts_with($currentRoute, 'receipts') && !str_starts_with($currentRoute, 'receipts/purchasing-history') && !str_starts_with($currentRoute, 'purchasing/history')) ? 'active' : '' ?>">
+        <a href="<?= url('receipts') ?>">
+          <i class="bi bi-box-arrow-in-down"></i> <span>Barang Masuk</span>
+        </a>
+      </li>
 
       <li class="<?= str_starts_with($currentRoute, 'reports/stock') ? 'active' : '' ?>">
         <a href="<?= url('reports/stock') ?>">

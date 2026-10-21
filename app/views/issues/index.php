@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Pengeluaran Barang Keluar (OUT)';
+$pageTitle = 'Pengeluaran Barang Keluar';
 include __DIR__ . '/../layout/header.php';
 ?>
 
@@ -32,11 +32,11 @@ include __DIR__ . '/../layout/header.php';
       </div>
 
       <div style="min-width: 140px;">
-        <select name="status" class="form-select">
+        <select name="status" class="form-select" onchange="this.form.submit()">
           <option value="">Semua Status</option>
-          <option value="open" <?= ($_GET['status'] ?? '') === 'open' ? 'selected' : '' ?>>OPEN (Belum Kembali)</option>
-          <option value="partially_returned" <?= ($_GET['status'] ?? '') === 'partially_returned' ? 'selected' : '' ?>>PARTIAL RETURN</option>
-          <option value="fully_returned" <?= ($_GET['status'] ?? '') === 'fully_returned' ? 'selected' : '' ?>>SELESAI KEMBALI</option>
+          <option value="Belum Kembali" <?= in_array($_GET['status'] ?? '', ['Belum Kembali', 'open']) ? 'selected' : '' ?>>Belum Kembali</option>
+          <option value="Sebagian Kembali" <?= in_array($_GET['status'] ?? '', ['Sebagian Kembali', 'partially_returned']) ? 'selected' : '' ?>>Sebagian Kembali</option>
+          <option value="Sudah Kembali" <?= in_array($_GET['status'] ?? '', ['Sudah Kembali', 'fully_returned']) ? 'selected' : '' ?>>Sudah Kembali</option>
         </select>
       </div>
 
@@ -71,7 +71,7 @@ include __DIR__ . '/../layout/header.php';
                   </a>
                 </td>
                 <td><?= formatDate($issue['issued_date']) ?></td>
-                <td><span class="badge badge-primary"><?= htmlspecialchars($issue['company']['code'] ?? '-') ?></span></td>
+                <td><?= renderCompanyBadge($issue['company']['code'] ?? '-') ?></td>
                 <td><strong style="color: #1e293b;"><?= htmlspecialchars($issue['project_name']) ?></strong></td>
                 <td><?= htmlspecialchars($issue['requester_name']) ?></td>
                 <td><?= htmlspecialchars($issue['recipient_name']) ?></td>
@@ -99,7 +99,7 @@ include __DIR__ . '/../layout/header.php';
         </span>
         <div class="pagination">
           <?php for ($p = 1; $p <= $meta['last_page']; $p++): ?>
-            <a href="<?= url('issues') ?>&page=<?= $p ?>&search=<?= urlencode($_GET['search'] ?? '') ?>&company_id=<?= urlencode($_GET['company_id'] ?? '') ?>" class="<?= ($meta['current_page'] == $p) ? 'active' : '' ?>">
+            <a href="<?= url('issues') ?>&page=<?= $p ?>&search=<?= urlencode($_GET['search'] ?? '') ?>&company_id=<?= urlencode($_GET['company_id'] ?? '') ?>&status=<?= urlencode($_GET['status'] ?? '') ?>" class="<?= ($meta['current_page'] == $p) ? 'active' : '' ?>">
               <span><?= $p ?></span>
             </a>
           <?php endfor; ?>

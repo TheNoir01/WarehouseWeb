@@ -130,6 +130,24 @@ switch ($route) {
     case 'receipts/show':
         (new GoodsReceiptController())->show();
         break;
+    case 'receipts/edit':
+        if (!canEditGoodsReceipt()) {
+            redirect('receipts', 'Akses ditolak: Anda tidak memiliki izin untuk mengedit penerimaan barang.', 'danger');
+        }
+        (new GoodsReceiptController())->edit();
+        break;
+    case 'receipts/update':
+        if (!canEditGoodsReceipt()) {
+            redirect('receipts', 'Akses ditolak: Anda tidak memiliki izin untuk mengedit penerimaan barang.', 'danger');
+        }
+        (new GoodsReceiptController())->update();
+        break;
+    case 'receipts/unlock-karyawan':
+        if (!canUnlockGoodsReceipt()) {
+            redirect('receipts', 'Akses ditolak: Hanya Kepala Gudang atau Admin yang dapat membuka kunci dokumen.', 'danger');
+        }
+        (new GoodsReceiptController())->unlockKaryawan();
+        break;
     case 'receipts/edit-purchasing':
         if (!canManagePurchasing()) {
             redirect('receipts', 'Akses ditolak: Anda tidak memiliki izin untuk mengedit purchasing.', 'danger');
@@ -177,6 +195,9 @@ switch ($route) {
         break;
     case 'issues/ajax-get':
         (new StockIssueController())->ajaxGet();
+        break;
+    case 'issues/ajax-search':
+        (new StockIssueController())->ajaxSearch();
         break;
 
     // Returns

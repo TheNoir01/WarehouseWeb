@@ -19,17 +19,40 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
         </h3>
 
         <div class="form-row">
-          <div class="form-group" style="grid-column: span 2;">
-            <label for="stock_issue_id">Pilih No. Dokumen Pengeluaran <span class="text-danger">*</span></label>
-            <select name="stock_issue_id" id="stock_issue_id" class="form-select" required onchange="loadIssueDetails(this.value)">
-              <option value="">Pilih Transaksi Barang Keluar</option>
-              <?php foreach ($issues as $iss): ?>
-                <option value="<?= $iss['id'] ?>" <?= $selectedIssueId == $iss['id'] ? 'selected' : '' ?>>
-                  [<?= $iss['company']['code'] ?? '' ?>] <?= htmlspecialchars($iss['issue_number']) ?> - Proyek: <?= htmlspecialchars($iss['project_name']) ?> (Penerima: <?= htmlspecialchars($iss['recipient_name']) ?>)
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <small class="text-muted">Setiap pengembalian wajib mereferensikan transaksi pengeluaran asalnya.</small>
+          <div class="form-group" style="grid-column: span 2; position: relative;" id="issueSearchContainer">
+            <label for="issueSearchInput" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span>Pilih No. Dokumen Pengeluaran <span class="text-danger">*</span></span>
+              <span id="selectedIssueBadge" class="badge badge-success" style="display: none; font-size: 0.75rem; font-weight: 700; background: #059669; color: #fff;">
+                <i class="bi bi-check-circle me-1"></i>Dokumen Terpilih
+              </span>
+            </label>
+
+            <!-- Hidden input for form submission -->
+            <input type="hidden" name="stock_issue_id" id="stock_issue_id" value="<?= htmlspecialchars($selectedIssueId) ?>" required>
+
+            <!-- Search Live Input Container -->
+            <div style="position: relative;">
+              <i class="bi bi-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.95rem; pointer-events: none;"></i>
+              <input type="text" 
+                     id="issueSearchInput" 
+                     class="form-control" 
+                     placeholder="Ketik untuk cari No. Dokumen OUT / Proyek / Penerima / PT..." 
+                     autocomplete="off" 
+                     style="padding-left: 38px; padding-right: 36px; font-weight: 600; font-size: 0.92rem; height: 42px; border: 1.5px solid #cbd5e1; border-radius: 6px;">
+              <button type="button" 
+                      id="btnClearIssueSearch" 
+                      style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer; display: none; line-height: 1; padding: 2px 6px;" 
+                      title="Bersihkan pilihan & cari dokumen lain">
+                &times;
+              </button>
+            </div>
+
+            <!-- Dropdown Live Search Results -->
+            <div id="issueDropdownResults" style="display: none; position: absolute; left: 0; right: 0; top: calc(100% - 6px); z-index: 1050; background: #ffffff; border: 1.5px solid #3b82f6; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.18), 0 8px 10px -6px rgba(0,0,0,0.1); max-height: 290px; overflow-y: auto;">
+              <!-- Dynamic issue items rendered by JS -->
+            </div>
+
+            <small class="text-muted" style="display: block; margin-top: 4px;">Setiap pengembalian wajib mereferensikan transaksi pengeluaran asalnya. Ketik kata kunci apa saja untuk mencari.</small>
           </div>
 
           <div class="form-group">
@@ -44,7 +67,7 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
         </div>
 
         <div class="form-group">
-          <label for="notes">Catatan Pengembalian (Opsional)</label>
+          <label for="notes">Catatan Pengembalian</label>
           <input type="text" name="notes" id="notes" class="form-control" placeholder="Alasan pengembalian, status pengerjaan, dsb.">
         </div>
       </div>
@@ -60,12 +83,12 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
           <table class="table" id="return-items-table">
             <thead>
               <tr>
-                <th style="width: 38%;">Barang ex Transaksi OUT</th>
-                <th style="width: 14%;">Qty Kembali</th>
-                <th style="width: 18%;">Status Pengembalian</th>
-                <th style="width: 12%;">Kondisi</th>
-                <th style="width: 8%;">Detail Sisa</th>
-                <th style="width: 5%;">Hapus</th>
+                <th style="width: 32%;">Barang ex Transaksi OUT</th>
+                <th style="width: 13%;">Qty Kembali</th>
+                <th style="width: 17%;">Status Pengembalian</th>
+                <th style="width: 13%;">Kondisi</th>
+                <th style="width: 20%;">Keterangan Sisa</th>
+                <th style="width: 5%; text-align: center;">Hapus</th>
               </tr>
             </thead>
             <tbody id="return-items-tbody">
@@ -83,27 +106,26 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
                   </div>
                 </td>
                 <td>
-                  <select name="items[0][return_status]" class="form-select return-status-select" onchange="toggleRemnantSection(this, 0)">
+                  <select name="items[0][return_status]" class="form-select return-status-select">
                     <option value="sisa">Sisa Pekerjaan</option>
                     <option value="kelebihan">Kelebihan Bawa</option>
                     <option value="tidak_terpakai">Tidak Jadi Terpakai</option>
                     <option value="bekas">Material Bekas Pakai</option>
-                    <option value="sisa_material">Sisa Material Potongan (Remnant)</option>
+                    <option value="sisa_material">Sisa Material Potongan</option>
                     <option value="lainnya">Lainnya</option>
                   </select>
                 </td>
                 <td>
                   <select name="items[0][condition]" class="form-select">
-                    <option value="good">Baik</option>
+                    <option value="baik">Baik</option>
+                    <option value="potongan">Potongan</option>
                     <option value="scrap">Scrap</option>
                     <option value="rework">Perlu Rework</option>
                     <option value="damaged">Rusak</option>
                   </select>
                 </td>
-                <td class="text-center">
-                  <button type="button" class="btn btn-outline btn-sm btn-remnant-toggle" id="btn-remnant-0" style="display:none;" onclick="openRemnantRowModal(0)">
-                    <i class="bi bi-scissors me-1"></i>Spesifikasi Sisa
-                  </button>
+                <td>
+                  <input type="text" name="items[0][notes]" class="form-control" placeholder="Keterangan jika ada sisa...">
                 </td>
                 <td class="text-center">
                   <button type="button" class="btn btn-danger btn-sm" onclick="removeReturnRow(this)"><i class="bi bi-trash"></i></button>
@@ -112,19 +134,11 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
             </tbody>
           </table>
         </div>
-
-        <!-- Hidden Remnant Inputs for Row 0 -->
-        <div id="remnant-inputs-0" style="display: none;">
-          <input type="hidden" name="items[0][material_remnant][shape_condition]" value="Tidak Beraturan">
-          <input type="hidden" name="items[0][material_remnant][dimension_description]" value="">
-          <input type="hidden" name="items[0][material_remnant][estimated_area]" value="">
-          <input type="hidden" name="items[0][material_remnant][estimated_weight]" value="">
-        </div>
       </div>
 
       <!-- DOKUMENTASI PENGEMBALIAN -->
       <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
-        <label for="return_photo"><i class="bi bi-camera me-1"></i>Foto Bukti Barang Pengembalian / Sisa Material (Sangat Dianjurkan)</label>
+        <label for="return_photo"><i class="bi bi-camera me-1"></i>Foto Bukti Barang Pengembalian / Sisa Material <strong>(WAJIB DISERTAKAN)</strong></label>
         <input type="file" name="attachment_file" id="return_photo" class="form-control" accept="image/*">
         <small class="text-muted">Untuk sisa material potongan atau barang rusak/bekas, sertakan foto fisik barang.</small>
       </div>
@@ -139,45 +153,277 @@ $selectedIssueId = $_GET['issue_id'] ?? '';
   </div>
 </div>
 
-<!-- MODAL SPESIFIKASI SISA MATERIAL (SECTION 14) -->
-<div class="modal-backdrop" id="modalRemnant">
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <span>Detail Spesifikasi Sisa Material Potongan</span>
-      <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modalRemnant')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="active_remnant_row_index" value="0">
-      
-      <div class="form-group">
-        <label>Kondisi Bentuk Fisik</label>
-        <input type="text" id="remnant_shape" class="form-control" placeholder="Contoh: Tidak Beraturan, Segitiga, Potongan L-Shape, Sudut">
-      </div>
-
-      <div class="form-group">
-        <label>Deskripsi Dimensi / Ukuran</label>
-        <input type="text" id="remnant_dimension" class="form-control" placeholder="Contoh: 1200 x 800 mm, Panjang 1.5 meter">
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Estimasi Luas (m²)</label>
-          <input type="number" step="0.0001" id="remnant_area" class="form-control" placeholder="0.75">
-        </div>
-        <div class="form-group">
-          <label>Estimasi Berat (kg)</label>
-          <input type="number" step="0.0001" id="remnant_weight" class="form-control" placeholder="15.5">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" onclick="closeModal('modalRemnant')">Batal</button>
-      <button type="button" class="btn btn-primary" onclick="applyRemnantData()">Terapkan Spesifikasi</button>
-    </div>
-  </div>
-</div>
-
 <script>
+// --- LIVE SEARCH DOKUMEN PENGELUARAN ---
+let allIssues = <?= json_encode($issues ?? []) ?>;
+const initialSelectedId = "<?= htmlspecialchars($selectedIssueId) ?>";
+let issueSearchDebounceTimer = null;
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatDate(isoStr) {
+  if (!isoStr) return '-';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch(e) {
+    return isoStr;
+  }
+}
+
+function getCompanyBadge(issue) {
+  const code = (issue.company && issue.company.code ? issue.company.code : '').toUpperCase();
+  if (code === 'KJG') {
+    return '<span style="background: #990000; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #700000; letter-spacing: 0.5px;">KJG</span>';
+  } else if (code === 'LNP') {
+    return '<span style="background: #0284c7; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #0369a1; letter-spacing: 0.5px;">LNP</span>';
+  }
+  return '<span style="background: #ecfdf5; color: #059669; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">Gudang Bersama</span>';
+}
+
+function matchesIssue(issue, tokens) {
+  if (!tokens || tokens.length === 0) return true;
+  const issueNo = (issue.issue_number || '').toLowerCase();
+  const proj = (issue.project_name || '').toLowerCase();
+  const recip = (issue.recipient_name || '').toLowerCase();
+  const req = (issue.requester_name || '').toLowerCase();
+  const notes = (issue.notes || '').toLowerCase();
+  const compCode = (issue.company && issue.company.code ? issue.company.code : '').toLowerCase();
+  const compName = (issue.company && issue.company.name ? issue.company.name : '').toLowerCase();
+  const dateStr = (issue.issued_date || '').toLowerCase();
+
+  const combined = `${issueNo} ${proj} ${recip} ${req} ${notes} ${compCode} ${compName} ${dateStr}`;
+  return tokens.every(token => combined.includes(token));
+}
+
+function renderIssueResults(query = '') {
+  const dropdown = document.getElementById('issueDropdownResults');
+  if (!dropdown) return;
+
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const filtered = allIssues.filter(issue => matchesIssue(issue, tokens));
+
+  if (filtered.length === 0) {
+    dropdown.innerHTML = `
+      <div style="padding: 16px; text-align: center; color: #64748b; font-size: 0.88rem;">
+        <i class="bi bi-search" style="font-size: 1.25rem; display: block; margin-bottom: 6px; color: #94a3b8;"></i>
+        Tidak ditemukan dokumen pengeluaran yang cocok dengan: <strong>"${escapeHtml(query)}"</strong>
+      </div>
+    `;
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  let html = `<div style="padding: 4px 0;">`;
+  filtered.forEach((issue, idx) => {
+    const badgeHtml = getCompanyBadge(issue);
+    const dateFormatted = formatDate(issue.issued_date);
+    const isSelected = String(document.getElementById('stock_issue_id').value) === String(issue.id);
+    const bgStyle = isSelected ? 'background: #eff6ff; border-left: 3px solid #2563eb;' : 'border-left: 3px solid transparent;';
+
+    html += `
+      <div class="issue-search-item" 
+           data-id="${issue.id}" 
+           data-index="${idx}"
+           style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: all 0.15s ease; ${bgStyle}">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; color: #1e3a8a; font-size: 0.93rem;">${escapeHtml(issue.issue_number)}</span>
+            ${badgeHtml}
+          </div>
+          <span style="font-size: 0.78rem; color: #64748b;">
+            <i class="bi bi-calendar3 me-1"></i>${dateFormatted}
+          </span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.82rem; color: #334155;">
+          <span><strong style="color: #64748b;">Proyek:</strong> ${escapeHtml(issue.project_name || '-')}</span>
+          <span><strong style="color: #64748b;">Penerima:</strong> ${escapeHtml(issue.recipient_name || '-')}</span>
+          ${issue.notes ? `<span style="color: #94a3b8; font-style: italic;">(${escapeHtml(issue.notes)})</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = 'block';
+
+  dropdown.querySelectorAll('.issue-search-item').forEach(itemEl => {
+    itemEl.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const issueId = this.dataset.id;
+      const selected = allIssues.find(i => String(i.id) === String(issueId));
+      if (selected) {
+        selectIssue(selected);
+      }
+    });
+    itemEl.addEventListener('mouseenter', function() {
+      dropdown.querySelectorAll('.issue-search-item').forEach(el => {
+        if (!el.style.borderLeft.includes('#2563eb')) el.style.background = '';
+      });
+      this.style.background = '#f8fafc';
+    });
+  });
+}
+
+function selectIssue(issue) {
+  document.getElementById('stock_issue_id').value = issue.id;
+
+  const compText = issue.company && issue.company.code ? `[${issue.company.code}] ` : '';
+  const displayText = `${compText}${issue.issue_number} — ${issue.project_name || 'Tanpa Proyek'} (${issue.recipient_name || '-'})`;
+  
+  const input = document.getElementById('issueSearchInput');
+  input.value = displayText;
+  input.style.borderColor = '#10b981';
+  input.style.backgroundColor = '#f0fdf4';
+
+  document.getElementById('selectedIssueBadge').style.display = 'inline-block';
+  document.getElementById('btnClearIssueSearch').style.display = 'block';
+  document.getElementById('issueDropdownResults').style.display = 'none';
+
+  loadIssueDetails(issue.id);
+}
+
+function clearIssueSelection() {
+  document.getElementById('stock_issue_id').value = '';
+  
+  const input = document.getElementById('issueSearchInput');
+  input.value = '';
+  input.style.borderColor = '#cbd5e1';
+  input.style.backgroundColor = '#ffffff';
+
+  document.getElementById('selectedIssueBadge').style.display = 'none';
+  document.getElementById('btnClearIssueSearch').style.display = 'none';
+  document.getElementById('returned_by_name').value = '';
+
+  currentIssueItems = [];
+  populateIssueDropdowns();
+
+  renderIssueResults('');
+  input.focus();
+}
+
+function setupIssueLiveSearch() {
+  const input = document.getElementById('issueSearchInput');
+  const dropdown = document.getElementById('issueDropdownResults');
+  const btnClear = document.getElementById('btnClearIssueSearch');
+  const container = document.getElementById('issueSearchContainer');
+
+  if (!input || !dropdown) return;
+
+  input.addEventListener('focus', function() {
+    if (this.style.backgroundColor === 'rgb(240, 253, 244)' || this.style.backgroundColor === '#f0fdf4') {
+      renderIssueResults('');
+    } else {
+      renderIssueResults(this.value);
+    }
+  });
+
+  input.addEventListener('click', function() {
+    if (dropdown.style.display !== 'block') {
+      renderIssueResults(this.value);
+    }
+  });
+
+  input.addEventListener('input', function() {
+    const q = this.value;
+    input.style.borderColor = '#3b82f6';
+    input.style.backgroundColor = '#ffffff';
+    document.getElementById('selectedIssueBadge').style.display = 'none';
+    document.getElementById('stock_issue_id').value = '';
+
+    if (q.trim()) {
+      btnClear.style.display = 'block';
+    } else {
+      btnClear.style.display = 'none';
+    }
+
+    renderIssueResults(q);
+
+    // Fallback debounced server search
+    clearTimeout(issueSearchDebounceTimer);
+    if (q.trim().length >= 2) {
+      issueSearchDebounceTimer = setTimeout(() => {
+        fetch(`index.php?r=issues/ajax-search&q=${encodeURIComponent(q.trim())}`)
+          .then(res => res.json())
+          .then(resData => {
+            if (resData.success && Array.isArray(resData.data)) {
+              let added = false;
+              resData.data.forEach(item => {
+                if (!allIssues.some(existing => String(existing.id) === String(item.id))) {
+                  allIssues.push(item);
+                  added = true;
+                }
+              });
+              if (added) {
+                renderIssueResults(input.value);
+              }
+            }
+          })
+          .catch(err => console.error('Error fetching issue search:', err));
+      }, 350);
+    }
+  });
+
+  if (btnClear) {
+    btnClear.addEventListener('click', function(e) {
+      e.stopPropagation();
+      clearIssueSelection();
+    });
+  }
+
+  // Klik di luar dropdown untuk menutup
+  document.addEventListener('click', function(e) {
+    if (container && !container.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  // Validasi form submit agar wajib pilih dokumen OUT
+  const form = document.getElementById('form-return');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      const issueId = document.getElementById('stock_issue_id').value;
+      if (!issueId) {
+        e.preventDefault();
+        alert('Silakan pilih No. Dokumen Pengeluaran terlebih dahulu melalui kolom pencarian.');
+        input.focus();
+      }
+    });
+  }
+
+  // Inisialisasi awal jika ada initialSelectedId
+  if (initialSelectedId) {
+    const found = allIssues.find(i => String(i.id) === String(initialSelectedId));
+    if (found) {
+      selectIssue(found);
+    } else {
+      fetch(`index.php?r=issues/ajax-get&id=${initialSelectedId}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            allIssues.unshift(res.data);
+            selectIssue(res.data);
+          }
+        })
+        .catch(e => console.error(e));
+    }
+  }
+}
+
+// --- LOGIKA TABEL BARANG RETURN ---
 let currentIssueItems = [];
 let returnRowCount = 1;
 
@@ -240,7 +486,7 @@ function updateReturnRowUnit(selectEl) {
 function populateIssueDropdowns() {
   document.querySelectorAll('.issue-item-dropdown').forEach(select => {
     const prevVal = select.value;
-    select.innerHTML = '<option value="">-- Pilih Barang dari Dokumen OUT --</option>';
+    select.innerHTML = '<option value="">Pilih Barang dari Dokumen OUT</option>';
     currentIssueItems.forEach(item => {
       const opt = document.createElement('option');
       opt.value = item.id;
@@ -264,7 +510,7 @@ function addReturnRow() {
   tr.innerHTML = `
     <td>
       <select name="items[${returnRowCount}][stock_issue_item_id]" class="form-select issue-item-dropdown" required onchange="updateReturnRowUnit(this)">
-        <option value="">-- Pilih Barang dari Dokumen OUT --</option>
+        <option value="">Pilih Barang dari Dokumen OUT</option>
       </select>
       <input type="hidden" name="items[${returnRowCount}][warehouse_location_id]" value="1">
     </td>
@@ -275,27 +521,26 @@ function addReturnRow() {
       </div>
     </td>
     <td>
-      <select name="items[${returnRowCount}][return_status]" class="form-select return-status-select" onchange="toggleRemnantSection(this, ${returnRowCount})">
-        <option value="sisa">Sisa Pekerjaan (Sisa)</option>
-        <option value="kelebihan">Kelebihan Bawa (Kelebihan)</option>
+      <select name="items[${returnRowCount}][return_status]" class="form-select return-status-select">
+        <option value="sisa">Sisa Pekerjaan</option>
+        <option value="kelebihan">Kelebihan Bawa</option>
         <option value="tidak_terpakai">Tidak Jadi Terpakai</option>
         <option value="bekas">Material Bekas Pakai</option>
-        <option value="sisa_material">Sisa Material Potongan (Remnant)</option>
+        <option value="sisa_material">Sisa Material Potongan</option>
         <option value="lainnya">Lainnya</option>
       </select>
     </td>
     <td>
       <select name="items[${returnRowCount}][condition]" class="form-select">
-        <option value="good">Baik (Good)</option>
-        <option value="scrap">Scrap (Afval)</option>
+        <option value="baik">Baik</option>
+        <option value="potongan">Potongan</option>
+        <option value="scrap">Scrap</option>
         <option value="rework">Perlu Rework</option>
-        <option value="damaged">Rusak (Damaged)</option>
+        <option value="damaged">Rusak</option>
       </select>
     </td>
-    <td class="text-center">
-      <button type="button" class="btn btn-outline btn-sm btn-remnant-toggle" id="btn-remnant-${returnRowCount}" style="display:none;" onclick="openRemnantRowModal(${returnRowCount})">
-        <i class="bi bi-scissors me-1"></i>Spesifikasi Sisa
-      </button>
+    <td>
+      <input type="text" name="items[${returnRowCount}][notes]" class="form-control" placeholder="Keterangan jika ada sisa...">
     </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeReturnRow(this)"><i class="bi bi-trash"></i></button>
@@ -303,19 +548,6 @@ function addReturnRow() {
   `;
 
   tbody.appendChild(tr);
-
-  // Add hidden remnant inputs container
-  const hiddenDiv = document.createElement('div');
-  hiddenDiv.id = `remnant-inputs-${returnRowCount}`;
-  hiddenDiv.style.display = 'none';
-  hiddenDiv.innerHTML = `
-    <input type="hidden" name="items[${returnRowCount}][material_remnant][shape_condition]" value="Tidak Beraturan">
-    <input type="hidden" name="items[${returnRowCount}][material_remnant][dimension_description]" value="">
-    <input type="hidden" name="items[${returnRowCount}][material_remnant][estimated_area]" value="">
-    <input type="hidden" name="items[${returnRowCount}][material_remnant][estimated_weight]" value="">
-  `;
-  document.getElementById('form-return').appendChild(hiddenDiv);
-
   returnRowCount++;
   populateIssueDropdowns();
 }
@@ -329,45 +561,8 @@ function removeReturnRow(btn) {
   btn.closest('tr').remove();
 }
 
-function toggleRemnantSection(select, idx) {
-  const btn = document.getElementById(`btn-remnant-${idx}`);
-  if (select.value === 'sisa_material') {
-    if (btn) btn.style.display = 'inline-block';
-  } else {
-    if (btn) btn.style.display = 'none';
-  }
-}
-
-function openRemnantRowModal(idx) {
-  document.getElementById('active_remnant_row_index').value = idx;
-  const container = document.getElementById(`remnant-inputs-${idx}`);
-  if (container) {
-    document.getElementById('remnant_shape').value = container.querySelector('input[name*="shape_condition"]').value || 'Tidak Beraturan';
-    document.getElementById('remnant_dimension').value = container.querySelector('input[name*="dimension_description"]').value || '';
-    document.getElementById('remnant_area').value = container.querySelector('input[name*="estimated_area"]').value || '';
-    document.getElementById('remnant_weight').value = container.querySelector('input[name*="estimated_weight"]').value || '';
-  }
-  openModal('modalRemnant');
-}
-
-function applyRemnantData() {
-  const idx = document.getElementById('active_remnant_row_index').value;
-  const container = document.getElementById(`remnant-inputs-${idx}`);
-  if (container) {
-    container.querySelector('input[name*="shape_condition"]').value = document.getElementById('remnant_shape').value;
-    container.querySelector('input[name*="dimension_description"]').value = document.getElementById('remnant_dimension').value;
-    container.querySelector('input[name*="estimated_area"]').value = document.getElementById('remnant_area').value;
-    container.querySelector('input[name*="estimated_weight"]').value = document.getElementById('remnant_weight').value;
-  }
-  closeModal('modalRemnant');
-  alert('Spesifikasi material sisa telah disimpan untuk baris ini.');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-  const select = document.getElementById('stock_issue_id');
-  if (select && select.value) {
-    loadIssueDetails(select.value);
-  }
+  setupIssueLiveSearch();
 });
 
 // Convert comma to dot automatically for decimal-enabled qty inputs

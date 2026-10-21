@@ -13,13 +13,28 @@ class RemnantController
         $this->api = new ApiService();
     }
 
+    private function mapRemnantStatus(?string $status): string
+    {
+        $status = strtolower(trim((string)$status));
+        $map = [
+            'tersedia' => 'available',
+            'terpakai' => 'used',
+            'scrap' => 'scrapped',
+            'available' => 'available',
+            'used' => 'used',
+            'scrapped' => 'scrapped',
+        ];
+        return $map[$status] ?? $status;
+    }
+
     public function index(): void
     {
+        $rawStatus = $_GET['status'] ?? '';
         $params = [
             'page' => $_GET['page'] ?? 1,
             'search' => $_GET['search'] ?? '',
             'company_id' => $_GET['company_id'] ?? '',
-            'status' => $_GET['status'] ?? '',
+            'status' => $this->mapRemnantStatus($rawStatus),
         ];
 
         $res = $this->api->get('remnants', array_filter($params));
@@ -56,8 +71,10 @@ class RemnantController
         $id = $_GET['id'] ?? null;
         if (!$id) redirect('remnants');
 
+        $status = $this->mapRemnantStatus($_POST['status'] ?? 'available');
+
         $res = $this->api->put("remnants/{$id}", [
-            'status' => $_POST['status'] ?? 'available',
+            'status' => $status,
         ]);
 
         if (!empty($res['success'])) {

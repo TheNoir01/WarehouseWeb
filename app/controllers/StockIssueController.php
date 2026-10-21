@@ -15,14 +15,22 @@ class StockIssueController
 
     public function index(): void
     {
+        $statusParam = trim($_GET['status'] ?? '');
+        $mappedStatus = match ($statusParam) {
+            'Belum Kembali', 'open' => 'open',
+            'Sebagian Kembali', 'partially_returned' => 'partially_returned',
+            'Sudah Kembali', 'fully_returned' => 'fully_returned',
+            default => $statusParam,
+        };
+
         $params = [
             'page' => $_GET['page'] ?? 1,
             'search' => $_GET['search'] ?? '',
             'company_id' => $_GET['company_id'] ?? '',
-            'status' => $_GET['status'] ?? '',
+            'status' => $mappedStatus,
         ];
 
-        $res = $this->api->get('goods-issues', array_filter($params));
+        $res = $this->api->get('goods-issues', array_filter($params, fn($v) => $v !== '' && $v !== null));
         $issues = $res['data'] ?? [];
         $meta = $res['meta'] ?? [];
 
@@ -117,4 +125,17 @@ class StockIssueController
         echo json_encode($res);
         exit;
     }
+
+    public function ajaxSearch(): void
+    {
+        header('Content-Type: application/json');
+        $q = trim($_GET['q'] ?? '');
+        $res = $this->api->get('goods-issues', [
+            'search' => $q,
+            'per_page' => 30
+        ]);
+        echo json_encode($res);
+        exit;
+    }
 }
+

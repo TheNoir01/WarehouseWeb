@@ -3,7 +3,7 @@ $companyCode = $receipt['company']['code'] ?? 'KJG';
 $companyName = $receipt['company']['name'] ?? 'PT Karunia Jaya Global';
 $companyId = $receipt['company_id'] ?? 5;
 $isLNP = ($companyCode === 'LNP');
-$themeColor = $isLNP ? '#0d9488' : '#2563eb';
+$themeColor = $isLNP ? '#0284c7' : '#990000';
 
 $pageTitle = 'Koreksi Penerimaan: ' . ($receipt['receipt_number'] ?? '');
 include __DIR__ . '/../layout/header.php';
@@ -28,6 +28,35 @@ include __DIR__ . '/../layout/header.php';
   </div>
 
   <div class="card-body">
+    <?php
+      $karyawanEditCount = (int)($receipt['karyawan_edit_count'] ?? 0);
+    ?>
+    <?php if (isKaryawan()): ?>
+      <div class="alert alert-info d-flex align-center justify-between" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+        <div>
+          <i class="bi bi-info-circle-fill me-2" style="font-size: 1.1rem; color: #3b82f6;"></i>
+          <strong>Batas Koreksi Karyawan:</strong> Dokumen ini telah diedit sebanyak <strong><?= $karyawanEditCount ?> dari batas 3 kali</strong>.
+          <div style="font-size: 0.825rem; margin-top: 2px; color: #1d4ed8;">
+            Jika disimpan sekarang, ini akan dihitung sebagai perubahan ke <strong><?= $karyawanEditCount + 1 ?></strong>. Setelah mencapai 3 kali, dokumen akan <strong>otomatis terkunci</strong> dan hanya dapat dibuka kembali oleh <strong>Kepala Gudang</strong> atau <strong>Admin</strong>.
+          </div>
+        </div>
+        <span class="badge" style="background: #3b82f6; color: #fff; font-size: 0.85rem; padding: 0.4rem 0.75rem; white-space: nowrap;">
+          Edit ke <?= $karyawanEditCount + 1 ?> / 3
+        </span>
+      </div>
+    <?php else: ?>
+      <div class="alert alert-secondary d-flex align-center justify-between" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem;">
+        <div>
+          <i class="bi bi-shield-check me-2" style="color: #059669; font-size: 1.1rem;"></i>
+          <strong>Hak Akses <?= htmlspecialchars(currentUser()['role'] ?? 'Admin') ?></strong> Perubahan oleh Anda tidak dibatasi dan tidak mengunci dokumen.
+        </div>
+        <?php if (!empty($receipt['is_karyawan_locked'])): ?>
+          <span class="badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 0.8rem; padding: 0.35rem 0.65rem;">
+            <i class="bi bi-lock-fill me-1"></i> Terkunci untuk Karyawan (<?= $karyawanEditCount ?>/3)
+          </span>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
 
     <!-- Kotak Tambah / Cari Barang Jika Ada Barang Tertinggal -->
     <div style="background: #ffffff; padding: 1.25rem; border-radius: 8px; border: 2px dashed #94a3b8; margin-bottom: 1.5rem;">
@@ -93,7 +122,14 @@ include __DIR__ . '/../layout/header.php';
                    placeholder="Contoh: SJ-2026/09/001">
           </div>
 
-          <div class="form-group" style="flex: 2;">
+          <div class="form-group" style="flex: 1;">
+            <label for="po_number"><i class="bi bi-tag me-1"></i> No. Purchase Order (PO)</label>
+            <input type="text" name="po_number" id="po_number" class="form-control" 
+                   value="<?= htmlspecialchars($receipt['po_number'] ?? '') ?>" 
+                   placeholder="Contoh: PO-KJG-2026/09/001">
+          </div>
+
+          <div class="form-group" style="flex: 1.5;">
             <label for="notes"><i class="bi bi-chat-left-dots me-1"></i> Catatan Penerimaan</label>
             <input type="text" name="notes" id="notes" class="form-control" 
                    value="<?= htmlspecialchars($receipt['notes'] ?? '') ?>" 

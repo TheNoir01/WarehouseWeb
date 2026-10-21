@@ -13,7 +13,7 @@ include __DIR__ . '/../layout/header.php';
         <i class="bi bi-file-earmark-excel me-1"></i>Ekspor Excel (.xlsx)
       </a>
       <?php if (canManageMaster()): ?>
-        <a href="<?= url('receipts/create') ?>&company=KJG" class="btn btn-sm" style="font-weight: 600; background-color: #800020; border-color: #6b001b; color: #ffffff;">
+        <a href="<?= url('receipts/create') ?>&company=KJG" class="btn btn-sm" style="font-weight: 600; background-color: #990000; border-color: #700000; color: #ffffff;">
           <i class="bi bi-box-arrow-in-down me-1"></i>Barang Masuk PT KJG
         </a>
         <a href="<?= url('receipts/create') ?>&company=LNP" class="btn btn-sm" style="font-weight: 600; background-color: #0284c7; border-color: #0369a1; color: #ffffff;">
@@ -137,15 +137,7 @@ include __DIR__ . '/../layout/header.php';
                 </td>
 
                 <td class="text-center">
-                  <?php if ($isLNP): ?>
-                    <span class="badge badge-company-lnp" style="background-color: #0284c7; color: #ffffff; border: 1px solid #0369a1; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">
-                      LNP
-                    </span>
-                  <?php else: ?>
-                    <span class="badge badge-company-kjg" style="background-color: #800020; color: #ffffff; border: 1px solid #6b001b; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">
-                      KJG
-                    </span>
-                  <?php endif; ?>
+                  <?= renderCompanyBadge($compCode) ?>
                 </td>
 
                 <td>
@@ -191,10 +183,34 @@ include __DIR__ . '/../layout/header.php';
                         <i class="bi bi-unlock-fill me-1"></i>Buka Kunci
                       </a>
                     <?php endif; ?>
-                    <?php if (canManageMaster()): ?>
+                    <?php 
+                      $isKaryawanLock = !empty($gr['is_karyawan_locked']) || (int)($gr['karyawan_edit_count'] ?? 0) >= 3;
+                      $karyawanEdits = (int)($gr['karyawan_edit_count'] ?? 0);
+                    ?>
+
+                    <?php if (isKaryawan()): ?>
+                      <?php if ($isKaryawanLock): ?>
+                        <span class="badge" style="font-size: 0.72rem; padding: 4px 7px; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; display: inline-flex; align-items: center;" title="Koreksi penerimaan telah terkunci (3x edit). Hubungi Kepala Gudang atau Admin untuk membuka kunci.">
+                          <i class="bi bi-lock-fill me-1"></i>Terkunci (3/3)
+                        </span>
+                      <?php else: ?>
+                        <a href="<?= url('receipts/edit') ?>&id=<?= $gr['id'] ?>" class="btn-action-edit" title="Koreksi Barang Masuk (Tersisa <?= 3 - $karyawanEdits ?>x edit)">
+                          <i class="bi bi-pencil me-1"></i>Edit<?= $karyawanEdits > 0 ? " ({$karyawanEdits}/3)" : '' ?>
+                        </a>
+                      <?php endif; ?>
+                    <?php elseif (canEditGoodsReceipt()): ?>
                       <a href="<?= url('receipts/edit') ?>&id=<?= $gr['id'] ?>" class="btn-action-edit" title="Koreksi Barang Masuk">
                         <i class="bi bi-pencil me-1"></i>Edit
                       </a>
+                      <?php if ($isKaryawanLock && canUnlockGoodsReceipt()): ?>
+                        <form method="POST" action="<?= url('receipts/unlock-karyawan') ?>" style="display: inline; margin: 0;" onsubmit="return confirm('Buka kunci dokumen ini agar role Karyawan dapat mengedit kembali?');">
+                          <input type="hidden" name="receipt_id" value="<?= $gr['id'] ?>">
+                          <input type="hidden" name="return_to" value="index">
+                          <button type="submit" class="btn btn-outline btn-sm" style="color: #059669; border-color: #a7f3d0; background: #ecfdf5; font-size: 0.75rem; padding: 2px 7px; cursor: pointer;" title="Buka kunci dokumen untuk Karyawan">
+                            <i class="bi bi-unlock-fill me-1"></i>Buka Kunci
+                          </button>
+                        </form>
+                      <?php endif; ?>
                     <?php endif; ?>
                     <a href="<?= url('receipts/show') ?>&id=<?= $gr['id'] ?>" class="btn-action-view" title="Lihat Detail Penerimaan">
                       <i class="bi bi-eye me-1"></i>Detail

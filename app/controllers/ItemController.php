@@ -273,12 +273,10 @@ class ItemController
         $purchasePrice = isset($_POST['purchase_price']) 
             ? (float) str_replace(',', '.', trim((string) $_POST['purchase_price'])) 
             : 0.0;
-        $poNumber = trim($_POST['po_number'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
 
         $payload = [
             'purchase_price' => max(0, $purchasePrice),
-            'po_number' => $poNumber ?: null,
             'notes' => $notes ?: null,
         ];
 
@@ -289,9 +287,9 @@ class ItemController
             : 'items';
 
         if (!empty($res['success'])) {
-            redirect($returnUrl, 'Data purchasing (No. PO & Harga) barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui tanpa menggeser antrean FIFO.');
+            redirect($returnUrl, 'Harga beli barang [' . ($res['data']['item_code'] ?? '') . '] berhasil diperbarui.');
         } else {
-            $msg = $res['message'] ?? 'Gagal memperbarui data purchasing barang.';
+            $msg = $res['message'] ?? 'Gagal memperbarui harga beli barang.';
             redirect($returnUrl, $msg, 'danger');
         }
     }

@@ -50,11 +50,15 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
 </h2>
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
-  <?php foreach ($companiesStats as $comp): ?>
-    <div class="card" style="border-top: 4px solid var(--primary);">
+  <?php foreach ($companiesStats as $comp): 
+    $cCode = strtoupper(trim($comp['company_code'] ?? ''));
+    $cardBorderColor = $cCode === 'KJG' ? '#990000' : ($cCode === 'LNP' ? '#0284c7' : 'var(--primary)');
+    $numColor = $cCode === 'KJG' ? '#990000' : ($cCode === 'LNP' ? '#0284c7' : 'var(--primary)');
+  ?>
+    <div class="card" style="border-top: 4px solid <?= $cardBorderColor ?>;">
       <div class="card-header">
         <div>
-          <span class="badge badge-primary"><?= htmlspecialchars($comp['company_code']) ?></span>
+          <?= renderCompanyBadge($comp['company_code']) ?>
           <span style="font-weight: 700; margin-left: 0.5rem;"><?= htmlspecialchars($comp['company_name']) ?></span>
         </div>
         <a href="<?= url('items') ?>&company_id=<?= $comp['company_id'] ?>" class="btn btn-outline btn-sm">
@@ -65,12 +69,9 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
           <div>
             <div class="text-muted" style="font-size: 0.8rem; font-weight: 600;">Total Jenis Barang</div>
-            <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">
+            <div style="font-size: 1.6rem; font-weight: 800; color: <?= $numColor ?>;">
               <?= number_format($comp['total_items']) ?> <span style="font-size: 0.85rem; font-weight: normal; color: #64748b;">Jenis / SKU</span>
             </div>
-          </div>
-          <div style="text-align: right;">
-            <span class="badge badge-secondary" style="font-size: 0.75rem;"><i class="bi bi-shield-check"></i> Master PT Terpisah</span>
           </div>
         </div>
 
@@ -85,7 +86,7 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-  <!-- Peringatan Stok Menipis / Habis -->
+  <!-- Peringatan Stok Menipis & Habis -->
   <div class="card">
     <div class="card-header">
       <span><i class="bi bi-exclamation-triangle-fill text-warning"></i> Peringatan Stok Menipis & Habis</span>
@@ -107,7 +108,7 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
           <?php else: ?>
             <?php foreach ($alertItems as $item): ?>
               <tr>
-                <td><span class="badge badge-secondary"><?= htmlspecialchars($item['company_code']) ?></span></td>
+                <td><?= renderCompanyBadge($item['company_code']) ?></td>
                 <td>
                   <a href="<?= url('items/show') ?>&id=<?= $item['id'] ?>" class="fw-bold">
                     <?= htmlspecialchars($item['name']) ?>
@@ -151,7 +152,7 @@ $recentMovements = $dashboardData['recent_movements'] ?? [];
             <?php foreach ($recentMovements as $mov): ?>
               <tr>
                 <td style="font-size: 0.8rem; color: #64748b;"><?= formatDateTime($mov['created_at']) ?></td>
-                <td><span class="badge badge-secondary"><?= htmlspecialchars($mov['company']['code'] ?? '-') ?></span></td>
+                <td><?= renderCompanyBadge($mov['company']['code'] ?? '-') ?></td>
                 <td>
                   <div class="fw-bold"><?= htmlspecialchars($mov['item']['name'] ?? '-') ?></div>
                 </td>

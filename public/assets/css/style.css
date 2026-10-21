@@ -816,12 +816,12 @@ label {
   color: #475569;
 }
 
-/* Company Badges: KJG (Merah Marun) & LNP (Biru Laut) */
+/* Company Badges: KJG (Merah Darah) & LNP (Biru Laut) */
 .badge-kjg,
 .badge-company-kjg {
-  background-color: #800020 !important;
+  background-color: #990000 !important;
   color: #ffffff !important;
-  border: 1px solid #6b001b !important;
+  border: 1px solid #700000 !important;
   font-weight: 700 !important;
   letter-spacing: 0.03em;
 }

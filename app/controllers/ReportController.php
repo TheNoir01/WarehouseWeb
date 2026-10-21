@@ -158,6 +158,7 @@ class ReportController
             redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk melihat mutasi stok.', 'danger');
         }
 
+        $perPageParam = $_GET['per_page'] ?? '25';
         $params = [
             'page' => $_GET['page'] ?? 1,
             'search' => $_GET['search'] ?? '',
@@ -165,7 +166,15 @@ class ReportController
             'movement_type' => $_GET['movement_type'] ?? '',
         ];
 
-        $res = $this->api->get('stock/movements', array_filter($params));
+        if ($perPageParam === 'all') {
+            $params['all'] = 1;
+        } else {
+            $perPage = (int) $perPageParam;
+            if ($perPage <= 0) $perPage = 25;
+            $params['per_page'] = $perPage;
+        }
+
+        $res = $this->api->get('stock/movements', array_filter($params, fn($v) => $v !== '' && $v !== null));
         $movements = $res['data'] ?? [];
         $meta = $res['meta'] ?? [];
 
@@ -246,9 +255,9 @@ class ReportController
             }
 
             $price = (float)($item['purchase_price'] ?? 0);
-            $priceVal = ($price > 0) ? $price : '';
+            $priceVal = ($price > 0) ? formatRupiah($price) : '-';
 
-            $poNumber = trim((string)($item['po_number'] ?? ''));
+            $poNumber = '';
 
             // Process goods receipts for this item in the current month
             $itemReceipts = $b['goods_receipts'] ?? $item['goods_receipts'] ?? [];
@@ -281,17 +290,43 @@ class ReportController
                 if (!empty($r['supplier_name']) && !in_array($r['supplier_name'], $receiptSuppliers, true)) {
                     $receiptSuppliers[] = $r['supplier_name'];
                 }
-                if (!empty($r['po_number']) && !in_array($r['po_number'], $receiptPos, true)) {
-                    $receiptPos[] = $r['po_number'];
+                if (!empty($r['po_number'])) {
+                    $cleanPo = trim((string)$r['po_number']);
+                    if ($cleanPo !== '' && !in_array($cleanPo, $receiptPos, true)) {
+                        $receiptPos[] = $cleanPo;
+                    }
                 }
             }
             ksort($receiptsByDay);
 
+            // If no supplier or PO found in current month receipts, check all receipts of this item
+            if (empty($receiptSuppliers) && !empty($itemReceipts)) {
+                foreach ($itemReceipts as $r) {
+                    if (!empty($r['supplier_name']) && !in_array($r['supplier_name'], $receiptSuppliers, true)) {
+                        $receiptSuppliers[] = $r['supplier_name'];
+                    }
+                }
+            }
+            if (empty($receiptPos) && !empty($itemReceipts)) {
+                foreach ($itemReceipts as $r) {
+                    if (!empty($r['po_number'])) {
+                        $cleanPo = trim((string)$r['po_number']);
+                        if ($cleanPo !== '' && !in_array($cleanPo, $receiptPos, true)) {
+                            $receiptPos[] = $cleanPo;
+                        }
+                    }
+                }
+            }
+
             if (empty($supplier) && !empty($receiptSuppliers)) {
                 $supplier = implode(', ', $receiptSuppliers);
             }
-            if (empty($poNumber) && !empty($receiptPos)) {
+
+            // Jika ada 1 atau lebih (2 atau lebih) No. PO, gabungkan dengan koma seperti format kolom tanggal masuk
+            if (!empty($receiptPos)) {
                 $poNumber = implode(', ', $receiptPos);
+            } else {
+                $poNumber = '-';
             }
 
             $tanggalMasuk = '';
@@ -351,7 +386,7 @@ class ReportController
             'Keterangan',
         ];
 
-        $colWidths = [6, 18, 18, 45, 10, 22, 16, 20, 14, 16, 35];
+        $colWidths = [6, 18, 18, 45, 10, 22, 18, 26, 14, 16, 35];
 
         $writer = new \App\Services\SimpleXlsxWriter();
 
@@ -473,7 +508,7 @@ class ReportController
 
             $item = $m['item'] ?? [];
             $grouped[$ym][$cCode][] = [
-                'time' => substr($rawDate, 0, 19),
+                'time' => formatDateTime($rawDate),
                 'company' => $cCode,
                 'type' => $m['movement_type'] ?? '-',
                 'ref' => $m['reference_number'] ?? '-',

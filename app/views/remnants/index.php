@@ -32,9 +32,9 @@ include __DIR__ . '/../layout/header.php';
       <div style="min-width: 140px;">
         <select name="status" class="form-select">
           <option value="">-- Semua Status --</option>
-          <option value="available" <?= ($_GET['status'] ?? '') === 'available' ? 'selected' : '' ?>>Tersedia (Available)</option>
-          <option value="used" <?= ($_GET['status'] ?? '') === 'used' ? 'selected' : '' ?>>Sudah Dipakai</option>
-          <option value="scrapped" <?= ($_GET['status'] ?? '') === 'scrapped' ? 'selected' : '' ?>>Afval / Scrap</option>
+          <option value="tersedia" <?= ($_GET['status'] ?? '') === 'tersedia' ? 'selected' : '' ?>>Tersedia</option>
+          <option value="terpakai" <?= ($_GET['status'] ?? '') === 'terpakai' ? 'selected' : '' ?>>Sudah Dipakai</option>
+          <option value="scrap" <?= ($_GET['status'] ?? '') === 'scrap' ? 'selected' : '' ?>>Scrap</option>
         </select>
       </div>
 

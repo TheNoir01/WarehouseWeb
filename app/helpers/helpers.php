@@ -145,10 +145,30 @@ function formatRupiah($amount): string
     return 'Rp ' . number_format((float) $amount, 0, ',', '.');
 }
 
+function formatRupiahExcel($amount): string
+{
+    if ((float) $amount <= 0) {
+        return '-';
+    }
+    return 'Rp ' . number_format((float) $amount, 0, ',', '.');
+}
+
 function canManageMaster(): bool
 {
     $role = currentUser()['role'] ?? '';
     return in_array($role, ['maintenance', 'kepala_gudang', 'karyawan']);
+}
+
+function canEditGoodsReceipt(): bool
+{
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['maintenance', 'admin', 'kepala_gudang', 'karyawan']);
+}
+
+function canUnlockGoodsReceipt(): bool
+{
+    $role = currentUser()['role'] ?? '';
+    return in_array($role, ['maintenance', 'admin', 'kepala_gudang']);
 }
 
 function canViewReports(): bool
@@ -176,29 +196,52 @@ function formatQty($qty, ?string $unit = ''): string
 function formatDate(?string $date): string
 {
     if (!$date) return '-';
-    return date('d/m/Y', strtotime($date));
+    try {
+        $dt = new DateTime($date);
+        $dt->setTimezone(new DateTimeZone('Asia/Jakarta'));
+        return $dt->format('d/m/Y');
+    } catch (\Throwable $e) {
+        return date('d/m/Y', strtotime($date));
+    }
 }
 
 function formatDateTime(?string $dateTime): string
 {
     if (!$dateTime) return '-';
-    return date('d/m/Y H:i', strtotime($dateTime));
+    try {
+        $dt = new DateTime($dateTime);
+        $dt->setTimezone(new DateTimeZone('Asia/Jakarta'));
+        return $dt->format('d/m/Y H:i');
+    } catch (\Throwable $e) {
+        return date('d/m/Y H:i', strtotime($dateTime));
+    }
 }
 
 function renderBadge(string $status): string
 {
-    $statusUpper = strtoupper($status);
+    $statusUpper = strtoupper(trim($status));
     $colorClass = match ($statusUpper) {
         'HABIS' => 'badge-danger',
         'MENIPIS' => 'badge-warning',
         'TERSEDIA' => 'badge-success',
-        'COMPLETED', 'CLOSED', 'FULLY_RETURNED' => 'badge-success',
-        'OPEN', 'PARTIALLY_RETURNED' => 'badge-primary',
+        'COMPLETED', 'CLOSED', 'FULLY_RETURNED', 'SUDAH KEMBALI' => 'badge-success',
+        'OPEN', 'BELUM KEMBALI' => 'badge-primary',
+        'PARTIALLY_RETURNED', 'SEBAGIAN KEMBALI' => 'badge-warning',
         'CANCELLED' => 'badge-danger',
         default => 'badge-secondary',
     };
 
-    return "<span class=\"badge {$colorClass}\">{$statusUpper}</span>";
+    $label = match ($statusUpper) {
+        'OPEN', 'BELUM KEMBALI' => 'Belum Kembali',
+        'PARTIALLY_RETURNED', 'SEBAGIAN KEMBALI' => 'Sebagian Kembali',
+        'FULLY_RETURNED', 'SUDAH KEMBALI' => 'Sudah Kembali',
+        'COMPLETED' => 'SELESAI',
+        'CLOSED' => 'DITUTUP',
+        'CANCELLED' => 'DIBATALKAN',
+        default => $statusUpper,
+    };
+
+    return "<span class=\"badge {$colorClass}\">{$label}</span>";
 }
 
 function icon(string $name, string $extraClass = '', ?string $style = null): string
@@ -213,7 +256,7 @@ function renderCompanyBadge(?string $code): string
     if ($codeUpper === 'LNP') {
         return '<span class="badge badge-company-lnp" style="background-color: #0284c7; color: #ffffff; border: 1px solid #0369a1; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">LNP</span>';
     } elseif ($codeUpper === 'KJG') {
-        return '<span class="badge badge-company-kjg" style="background-color: #8B0000; color: #ffffff; border: 1px solid #6b001b; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">KJG</span>';
+        return '<span class="badge badge-company-kjg" style="background-color: #990000; color: #ffffff; border: 1px solid #700000; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.03em;">KJG</span>';
     } elseif (!empty($codeUpper) && $codeUpper !== '-') {
         return '<span class="badge badge-secondary" style="font-weight: 700; font-size: 0.75rem;">' . htmlspecialchars($codeUpper) . '</span>';
     }

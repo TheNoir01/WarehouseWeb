@@ -9,7 +9,7 @@ include __DIR__ . '/../layout/header.php';
       Dokumen Pengeluaran: <?= htmlspecialchars($issue['issue_number'] ?? '') ?>
     </h1>
     <?php if (!empty($issue['company']['code'])): ?>
-      <span class="badge badge-primary"><?= htmlspecialchars($issue['company']['code']) ?></span>
+      <?= renderCompanyBadge($issue['company']['code']) ?>
     <?php else: ?>
       <span class="badge badge-success" style="background: #059669; color: #fff;">Gudang Bersama</span>
     <?php endif; ?>
@@ -149,7 +149,7 @@ include __DIR__ . '/../layout/header.php';
                     <?= htmlspecialchars($alloc['batch']['batch_number'] ?? '-') ?>
                   </td>
                   <td>
-                    <span class="badge badge-primary"><?= htmlspecialchars($alloc['company']['code'] ?? '-') ?></span>
+                    <?= renderCompanyBadge($alloc['company']['code'] ?? '-') ?>
                     <span style="font-size: 0.85rem; margin-left: 4px;"><?= htmlspecialchars($alloc['company']['name'] ?? '') ?></span>
                   </td>
                   <td><?= htmlspecialchars($alloc['item']['name'] ?? '-') ?></td>

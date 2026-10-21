@@ -112,7 +112,6 @@ include __DIR__ . '/../layout/header.php';
                 $searchContent = strtolower(
                   ($item['item_code'] ?? '') . ' ' .
                   ($item['name'] ?? '') . ' ' .
-                  ($item['po_number'] ?? '') . ' ' .
                   ($item['specification'] ?? '') . ' ' .
                   ($item['category']['name'] ?? '') . ' ' .
                   ($item['company']['code'] ?? '') . ' ' .
@@ -161,7 +160,6 @@ include __DIR__ . '/../layout/header.php';
                         'total_stock' => $item['total_stock'],
                         'unit' => $item['unit']['code'] ?? '',
                         'purchase_price' => $item['purchase_price'] ?? 0,
-                        'po_number' => $item['po_number'] ?? '',
                         'category_id' => $item['category_id'] ?? ($item['category']['id'] ?? ''),
                         'unit_id' => $item['unit_id'] ?? ($item['unit']['id'] ?? ''),
                         'minimum_stock' => $item['minimum_stock'] ?? 0,
@@ -464,8 +462,6 @@ function openPurchasingModal(itemData) {
   document.getElementById('modalCompanyCode').innerText = itemData.company_code || '';
   document.getElementById('modalItemStock').innerText = 'Stok: ' + (itemData.total_stock || 0) + ' ' + (itemData.unit || '');
   document.getElementById('modalPurchasePrice').value = (itemData.purchase_price && itemData.purchase_price > 0) ? itemData.purchase_price : '';
-  const poEl = document.getElementById('modalPoNumber');
-  if (poEl) poEl.value = itemData.po_number || '';
   const notesEl = document.getElementById('modalPriceNotes');
   if (notesEl) notesEl.value = '';
   
@@ -473,11 +469,7 @@ function openPurchasingModal(itemData) {
   if (modal) {
     modal.style.display = 'flex';
     setTimeout(() => {
-      if (poEl) {
-        poEl.focus();
-      } else {
-        document.getElementById('modalPurchasePrice').focus();
-      }
+      document.getElementById('modalPurchasePrice').focus();
     }, 100);
   }
 }
@@ -549,16 +541,6 @@ function closeEditItemModal() {
               <span class="badge badge-primary" id="modalCompanyCode">-</span>
               <span class="badge badge-secondary" id="modalItemStock">-</span>
             </div>
-          </div>
-
-          <!-- Input No. PO -->
-          <div class="form-group mb-3">
-            <label class="form-label fw-bold" for="modalPoNumber" style="color: #0369a1; font-size: 0.9rem;">
-              <i class="bi bi-receipt me-1"></i> Nomor PO (Purchase Order)
-            </label>
-            <input type="text" name="po_number" id="modalPoNumber" class="form-control" 
-                  placeholder="Contoh: PO/2026/09/001" style="font-family: monospace; font-size: 0.95rem; border-color: #7dd3fc;" autocomplete="off">
-            <small class="text-muted">Nomor PO acuan pembelian barang ini dari supplier.</small>
           </div>
 
           <!-- Input Harga Satuan -->
