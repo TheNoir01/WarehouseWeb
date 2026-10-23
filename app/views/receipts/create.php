@@ -108,7 +108,7 @@ include __DIR__ . '/../layout/header.php';
           </div>
           <div class="form-group" style="flex: 1;">
             <label for="po_number"><i class="bi bi-receipt me-1"></i> No. PO (Purchase Order) (Opsional)</label>
-            <input type="text" name="po_number" id="po_number" class="form-control" placeholder="Contoh: PO-KJG-2026/09/001">
+            <input type="text" name="po_number" id="po_number" class="form-control" placeholder="Contoh: 1/PO-KJG/1/2026">
             <small class="text-muted" style="font-size: 0.75rem; display: block; margin-top: 2px;">Bisa dikosongkan jika belum ada.</small>
           </div>
           <div class="form-group" style="flex: 1.5;">
@@ -133,10 +133,9 @@ include __DIR__ . '/../layout/header.php';
           <table class="table" id="receipt-items-table">
             <thead>
               <tr>
-                <th style="width: 53%;">Barang (Kode & Nama)</th>
-                <th style="width: 24%;">Qty Masuk</th>
-                <th style="width: 16%;">Kondisi</th>
-                <th style="width: 7%; text-align: center;">Hapus</th>
+                <th style="width: 65%;">Barang (Kode & Nama)</th>
+                <th style="width: 27%;">Qty Masuk</th>
+                <th style="width: 8%; text-align: center;">Hapus</th>
               </tr>
             </thead>
             <tbody id="receipt-items-tbody">
@@ -164,6 +163,7 @@ include __DIR__ . '/../layout/header.php';
                     </div>
                     <input type="hidden" name="items[0][item_id]" value="<?= $newItem['id'] ?>">
                     <input type="hidden" name="items[0][warehouse_location_id]" value="<?= $locations[0]['id'] ?? 1 ?>">
+                    <input type="hidden" name="items[0][condition]" value="good">
                   </td>
                   <td>
                     <div class="input-group">
@@ -171,13 +171,6 @@ include __DIR__ . '/../layout/header.php';
                              name="items[0][qty]" class="form-control item-qty" required placeholder="<?= $isDec ? '0.00' : '1' ?>" autofocus>
                       <span class="unit-badge has-unit"><?= htmlspecialchars($newItem['unit']['code'] ?? '-') ?></span>
                     </div>
-                  </td>
-                  <td>
-                    <select name="items[0][condition]" class="form-select">
-                      <option value="good">Baik</option>
-                      <option value="damaged">Rusak Fisik</option>
-                      <option value="other">Lainnya</option>
-                    </select>
                   </td>
                   <td class="text-center">
                     <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)">
@@ -187,7 +180,7 @@ include __DIR__ . '/../layout/header.php';
                 </tr>
               <?php else: ?>
                 <tr id="empty-receipt-row">
-                  <td colspan="4" class="text-center text-muted" style="padding: 2.25rem 1rem;">
+                  <td colspan="3" class="text-center text-muted" style="padding: 2.25rem 1rem;">
                     <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
                     <span style="font-weight: 600; color: #64748b; font-size: 0.95rem;">Belum ada barang di daftar penerimaan.</span>
                     <div style="font-size: 0.825rem; color: #94a3b8; margin-top: 0.25rem;">
@@ -453,19 +446,13 @@ function addItemToReceiptFromSearch(item) {
       </div>
       <input type="hidden" name="items[${rowCount}][item_id]" value="${item.id}">
       <input type="hidden" name="items[${rowCount}][warehouse_location_id]" value="${defaultLocationId}">
+      <input type="hidden" name="items[${rowCount}][condition]" value="good">
     </td>
     <td>
       <div class="input-group">
         <input type="number" step="${stepVal}" min="${minVal}" name="items[${rowCount}][qty]" class="form-control item-qty" required placeholder="${placeholderVal}">
         <span class="unit-badge has-unit">${escapeHtml(item.unit_code || '-')}</span>
       </div>
-    </td>
-    <td>
-      <select name="items[${rowCount}][condition]" class="form-select">
-        <option value="good">Baik</option>
-        <option value="damaged">Rusak Fisik</option>
-        <option value="other">Lainnya</option>
-      </select>
     </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)">

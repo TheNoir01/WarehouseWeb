@@ -334,12 +334,16 @@ class GoodsReceiptController
             $supplier = $r['supplier']['name'] ?? $r['supplier_name'] ?? '-';
             $sj = trim((string)($r['delivery_order_number'] ?? ''));
             $po = trim((string)($r['po_number'] ?? ''));
-            if ($sj !== '' && $po !== '') {
-                $ref = "SJ: {$sj} | PO: {$po}";
-            } elseif ($po !== '') {
-                $ref = "PO: {$po}";
-            } elseif ($sj !== '') {
-                $ref = "SJ: {$sj}";
+            // Bersihkan prefix PO: / SJ: jika user pernah mengetik manual dengan prefix tersebut
+            $cleanSj = preg_replace('/^SJ\s*:\s*/i', '', $sj);
+            $cleanPo = preg_replace('/^PO\s*:\s*/i', '', $po);
+
+            if ($cleanSj !== '' && $cleanPo !== '') {
+                $ref = ($cleanSj === $cleanPo) ? $cleanPo : "{$cleanSj} / {$cleanPo}";
+            } elseif ($cleanPo !== '') {
+                $ref = $cleanPo;
+            } elseif ($cleanSj !== '') {
+                $ref = $cleanSj;
             } else {
                 $ref = '-';
             }
@@ -357,6 +361,8 @@ class GoodsReceiptController
                     'item_name' => '(Tanpa Item)',
                     'qty' => 0,
                     'unit' => '-',
+                    'unit_price' => '-',
+                    'total_price' => '-',
                     'condition' => '-',
                     'notes' => $r['notes'] ?? '-',
                     'receiver' => $receiver,
@@ -364,6 +370,19 @@ class GoodsReceiptController
             } else {
                 foreach ($items as $it) {
                     $itemObj = $it['item'] ?? [];
+                    $qty = (float) ($it['qty'] ?? 0);
+                    $unitPrice = (float) ($it['unit_price'] ?? 0);
+                    if ($unitPrice <= 0 && !empty($itemObj['purchase_price']) && (float) $itemObj['purchase_price'] > 0) {
+                        $unitPrice = (float) $itemObj['purchase_price'];
+                    }
+                    $totalPrice = (float) ($it['total_price'] ?? ($qty * $unitPrice));
+                    if ($totalPrice <= 0 && $unitPrice > 0) {
+                        $totalPrice = round($qty * $unitPrice, 2);
+                    }
+
+                    $unitPriceStr = ($unitPrice > 0) ? formatRupiah($unitPrice) : '-';
+                    $totalPriceStr = ($totalPrice > 0) ? formatRupiah($totalPrice) : '-';
+
                     $grouped[$ym][$cCode][] = [
                         'doc_num' => $docNum,
                         'date' => $date,
@@ -372,8 +391,10 @@ class GoodsReceiptController
                         'ref' => $ref,
                         'item_code' => $itemObj['item_code'] ?? '-',
                         'item_name' => $itemObj['name'] ?? '-',
-                        'qty' => (float) ($it['qty'] ?? 0),
+                        'qty' => $qty,
                         'unit' => $itemObj['unit']['code'] ?? $itemObj['unit']['name'] ?? '-',
+                        'unit_price' => $unitPriceStr,
+                        'total_price' => $totalPriceStr,
                         'condition' => ucfirst($it['condition'] ?? 'good'),
                         'notes' => $it['notes'] ?? $r['notes'] ?? '-',
                         'receiver' => $receiver,
@@ -393,12 +414,14 @@ class GoodsReceiptController
             'Nama Barang',
             'Qty Masuk',
             'Satuan',
+            'Harga Satuan (Rp)',
+            'Total Harga (Rp)',
             'Kondisi',
             'Keterangan / Catatan',
             'Petugas Penerima',
         ];
 
-        $colWidths = [6, 20, 15, 14, 26, 22, 16, 34, 14, 12, 12, 26, 20];
+        $colWidths = [6, 20, 15, 14, 26, 22, 16, 34, 14, 10, 18, 18, 12, 26, 20];
 
         $writer = new \App\Services\SimpleXlsxWriter();
 
@@ -430,6 +453,8 @@ class GoodsReceiptController
                         '-',
                         '-',
                         '-',
+                        '-',
+                        '-',
                     ];
                 } else {
                     foreach ($rowsData as $row) {
@@ -444,6 +469,8 @@ class GoodsReceiptController
                             $row['item_name'],
                             $row['qty'],
                             $row['unit'],
+                            $row['unit_price'],
+                            $row['total_price'],
                             $row['condition'],
                             $row['notes'],
                             $row['receiver'],
@@ -455,7 +482,7 @@ class GoodsReceiptController
             }
         }
 
-        $filename = 'Laporan_Barang_Masuk_' . date('Ymd_His') . '.xlsx';
+        $filename = 'Laporan_Barang_Masuk_' . date('d-m-Y') . '.xlsx';
         $writer->download($filename);
     }
 

@@ -137,5 +137,195 @@ class StockIssueController
         echo json_encode($res);
         exit;
     }
+
+    public function exportExcel(): void
+    {
+        $res = $this->api->get('goods-issues/export-data');
+        $issues = $res['data'] ?? [];
+
+        // Month names in Indonesian
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        // Group issues by Month (YYYY-MM) and Company Code
+        $grouped = [];
+        $allCompanies = ['KJG' => 'PT Karunia Jaya Global', 'LNP' => 'PT Lestari Nusantara Perkasa'];
+
+        // Gather all distinct months
+        $monthsFound = [];
+        foreach ($issues as $iss) {
+            $date = $iss['issued_date'] ?? substr($iss['created_at'] ?? date('Y-m-d'), 0, 10);
+            $ym = substr($date, 0, 7);
+            if ($ym) {
+                $monthsFound[$ym] = true;
+            }
+        }
+
+        if (empty($monthsFound)) {
+            $monthsFound[date('Y-m')] = true;
+        }
+
+        ksort($monthsFound);
+
+        foreach (array_keys($monthsFound) as $ym) {
+            foreach ($allCompanies as $cCode => $cName) {
+                $grouped[$ym][$cCode] = [];
+            }
+        }
+
+        foreach ($issues as $iss) {
+            $rawDate = (string) ($iss['issued_date'] ?? $iss['created_at'] ?? date('Y-m-d'));
+            $date = substr($rawDate, 0, 10);
+            $ym = substr($date, 0, 7);
+            $cCode = strtoupper($iss['company']['code'] ?? 'KJG');
+            if (!isset($allCompanies[$cCode])) {
+                $allCompanies[$cCode] = $iss['company']['name'] ?? $cCode;
+            }
+            if (!isset($grouped[$ym][$cCode])) {
+                $grouped[$ym][$cCode] = [];
+            }
+
+            $docNum = $iss['issue_number'] ?? '-';
+            $project = $iss['project_name'] ?? '-';
+            $requester = $iss['requester_name'] ?? '-';
+            $recipient = $iss['recipient_name'] ?? '-';
+            $status = match ($iss['status'] ?? '') {
+                'open' => 'Belum Kembali',
+                'partially_returned' => 'Sebagian Kembali',
+                'fully_returned' => 'Sudah Kembali',
+                default => $iss['status'] ?? '-',
+            };
+            $issuedBy = $iss['issued_by']['name'] ?? '-';
+
+            $items = $iss['items'] ?? [];
+            if (empty($items)) {
+                $grouped[$ym][$cCode][] = [
+                    'doc_num' => $docNum,
+                    'date' => $date,
+                    'company' => $cCode,
+                    'project' => $project,
+                    'requester' => $requester,
+                    'recipient' => $recipient,
+                    'item_code' => '-',
+                    'item_name' => '(Tanpa Item)',
+                    'qty' => 0,
+                    'unit' => '-',
+                    'location' => '-',
+                    'status' => $status,
+                    'notes' => $iss['notes'] ?? '-',
+                    'issued_by' => $issuedBy,
+                ];
+            } else {
+                foreach ($items as $it) {
+                    $itemObj = $it['item'] ?? [];
+                    $qty = (float) ($it['qty_issued'] ?? 0);
+                    $unitName = $itemObj['unit']['name'] ?? ($it['unit'] ?? '-');
+                    $locationName = $it['location']['name'] ?? '-';
+                    $itemNotes = trim((string) ($it['notes'] ?? ''));
+                    $rowNote = $itemNotes !== '' ? $itemNotes : ($iss['notes'] ?? '-');
+
+                    $grouped[$ym][$cCode][] = [
+                        'doc_num' => $docNum,
+                        'date' => $date,
+                        'company' => $cCode,
+                        'project' => $project,
+                        'requester' => $requester,
+                        'recipient' => $recipient,
+                        'item_code' => $itemObj['item_code'] ?? '-',
+                        'item_name' => $itemObj['name'] ?? '-',
+                        'qty' => $qty,
+                        'unit' => $unitName,
+                        'location' => $locationName,
+                        'status' => $status,
+                        'notes' => $rowNote,
+                        'issued_by' => $issuedBy,
+                    ];
+                }
+            }
+        }
+
+        $headers = [
+            'No.',
+            'No. Dokumen',
+            'Tanggal Keluar',
+            'PT Pemilik',
+            'Proyek / Keperluan',
+            'Divisi / Bagian',
+            'Penerima / Pengambil',
+            'Kode Barang',
+            'Nama Barang',
+            'Qty Keluar',
+            'Satuan',
+            'Lokasi Gudang',
+            'Status Retur',
+            'Keterangan / Catatan',
+            'Petugas Lapangan',
+        ];
+
+        $colWidths = [6, 20, 15, 14, 25, 18, 22, 16, 32, 14, 10, 18, 16, 25, 20];
+
+        $writer = new \App\Services\SimpleXlsxWriter();
+
+        foreach ($grouped as $ym => $companiesData) {
+            $parts = explode('-', $ym);
+            $year = $parts[0] ?? date('Y');
+            $mNum = isset($parts[1]) ? (int) $parts[1] : (int) date('m');
+            $mLabel = ($monthNames[$mNum] ?? 'Bln') . ' ' . $year;
+
+            foreach ($companiesData as $cCode => $rowsData) {
+                $sheetTitle = "{$cCode} - {$mLabel}";
+                $sheetRows = [];
+                $no = 1;
+
+                if (empty($rowsData)) {
+                    $sheetRows[] = [
+                        1,
+                        '-',
+                        '-',
+                        $cCode,
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                        'Tidak ada transaksi barang keluar pada periode ini',
+                        0,
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                    ];
+                } else {
+                    foreach ($rowsData as $row) {
+                        $sheetRows[] = [
+                            $no++,
+                            $row['doc_num'],
+                            $row['date'],
+                            $row['company'],
+                            $row['project'],
+                            $row['requester'],
+                            $row['recipient'],
+                            $row['item_code'],
+                            $row['item_name'],
+                            $row['qty'],
+                            $row['unit'],
+                            $row['location'],
+                            $row['status'],
+                            $row['notes'],
+                            $row['issued_by'],
+                        ];
+                    }
+                }
+
+                $writer->addSheet($sheetTitle, $headers, $sheetRows, $colWidths);
+            }
+        }
+
+        $filename = 'Laporan_Barang_Keluar_' . date('d-m-Y') . '.xlsx';
+        $writer->download($filename);
+    }
 }
 

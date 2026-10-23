@@ -4,11 +4,16 @@ include __DIR__ . '/../layout/header.php';
 ?>
 
 <div class="card">
-  <div class="card-header">
+  <div class="card-header d-flex justify-between align-center" style="flex-wrap: wrap; gap: 0.75rem;">
     <span><i class="bi bi-box-arrow-up"></i> Riwayat Dokumen Barang Keluar</span>
-    <a href="<?= url('issues/create') ?>" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-circle"></i> Pengeluaran Barang Baru
-    </a>
+    <div class="d-flex gap-1 align-center" style="flex-wrap: wrap;">
+      <a href="<?= url('issues/export-excel') ?>" class="btn btn-outline btn-sm" style="font-weight: 600; color: #16a34a; border-color: #16a34a;" title="Ekspor seluruh data barang keluar ke 1 file Excel multi-sheet terpisah per PT & per Bulan">
+        <i class="bi bi-file-earmark-excel me-1"></i>Ekspor Excel (.xlsx)
+      </a>
+      <a href="<?= url('issues/create') ?>" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle"></i> Pengeluaran Barang Baru
+      </a>
+    </div>
   </div>
 
   <div class="card-body">

@@ -89,7 +89,15 @@ include __DIR__ . '/../layout/header.php';
             foreach ($receipt['items'] ?? [] as $idx => $itemRow): 
               $qty = (float) $itemRow['qty'];
               $unitPrice = (float) ($itemRow['unit_price'] ?? 0);
-              $totalPrice = (float) ($itemRow['total_price'] ?? ($qty * $unitPrice));
+              $masterPrice = (float) ($itemRow['item']['purchase_price'] ?? 0);
+              // Jika harga pada penerimaan ini belum diisi, lanjutkan dengan harga terakhir barang tersebut
+              if ($unitPrice <= 0 && $masterPrice > 0) {
+                  $unitPrice = $masterPrice;
+              }
+              $totalPrice = (float) ($itemRow['total_price'] ?? 0);
+              if ($totalPrice <= 0 && $unitPrice > 0) {
+                  $totalPrice = round($qty * $unitPrice, 2);
+              }
               $initialGrandTotal += $totalPrice;
             ?>
               <tr>
@@ -101,6 +109,11 @@ include __DIR__ . '/../layout/header.php';
                   <div style="font-family: monospace; font-size: 0.8rem; color: #64748b;">
                     <?= htmlspecialchars($itemRow['item']['item_code'] ?? '-') ?>
                   </div>
+                  <?php if ($masterPrice > 0): ?>
+                    <div style="font-size: 0.73rem; color: #0284c7; margin-top: 3px;">
+                      <i class="bi bi-tag-fill me-1"></i>Harga master terakhir: <strong><?= formatRupiah($masterPrice) ?></strong>
+                    </div>
+                  <?php endif; ?>
                 </td>
                 <td class="text-right fw-bold" style="color: #059669; font-size: 0.95rem;">
                   <?= formatQty($qty) ?>

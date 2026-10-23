@@ -18,7 +18,7 @@ class SimpleXlsxWriter
      * @param array $rows List of row arrays
      * @param array $colWidths Optional array of column widths (in characters)
      */
-    public function addSheet(string $name, array $headers, array $rows, array $colWidths = []): void
+    public function addSheet(string $name, array $headers, array $rows, array $colWidths = [], array $options = []): void
     {
         $sanitizedName = mb_substr(preg_replace('/[\\\\\/*?:\[\]]/', '', trim($name)), 0, 31);
         if ($sanitizedName === '') {
@@ -40,6 +40,7 @@ class SimpleXlsxWriter
             'headers' => $headers,
             'rows' => $rows,
             'widths' => $colWidths,
+            'options' => $options,
         ];
     }
 
@@ -87,15 +88,17 @@ class SimpleXlsxWriter
         // 4. xl/styles.xml
         $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
         $styles .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
-        $styles .= '<fonts count="6">';
+        $styles .= '<fonts count="8">';
         $styles .= '<font><sz val="10"/><name val="Calibri"/></font>'; // 0: Normal
         $styles .= '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'; // 1: Header (White, Bold)
         $styles .= '<font><b/><sz val="10"/><name val="Calibri"/></font>'; // 2: Bold
         $styles .= '<font><b/><sz val="10"/><color rgb="FF006100"/><name val="Calibri"/></font>'; // 3: Dark Green Bold
         $styles .= '<font><b/><sz val="10"/><color rgb="FF9C6500"/><name val="Calibri"/></font>'; // 4: Dark Yellow Bold
         $styles .= '<font><b/><sz val="10"/><color rgb="FF9C0006"/><name val="Calibri"/></font>'; // 5: Dark Red Bold
+        $styles .= '<font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>'; // 6: Title / Header Dark Bold 11
+        $styles .= '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'; // 7: Title White Bold 11
         $styles .= '</fonts>';
-        $styles .= '<fills count="7">';
+        $styles .= '<fills count="13">';
         $styles .= '<fill><patternFill patternType="none"/></fill>'; // 0: None
         $styles .= '<fill><patternFill patternType="gray125"/></fill>'; // 1: Gray125
         $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FF1B365D"/></patternFill></fill>'; // 2: Dark Navy Header
@@ -103,6 +106,12 @@ class SimpleXlsxWriter
         $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill>'; // 4: Green Marker
         $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill>'; // 5: Yellow Marker
         $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill>'; // 6: Red Marker
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFBBC04"/></patternFill></fill>'; // 7: Amber/Gold Title (Row 1)
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFF0000"/></patternFill></fill>'; // 8: Red Title (Row 2 KJG)
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/></patternFill></fill>'; // 9: Bright Yellow Header (Row 3)
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFF3F3F3"/></patternFill></fill>'; // 10: Light Gray Zebra
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/></patternFill></fill>'; // 11: Darker Light Gray
+        $styles .= '<fill><patternFill patternType="solid"><fgColor rgb="FF6D9EEB"/></patternFill></fill>'; // 12: Soft Blue Title (Row 2 LNP)
         $styles .= '</fills>';
         $styles .= '<borders count="2">';
         $styles .= '<border><left/><right/><top/><bottom/></border>'; // 0: None
@@ -114,16 +123,27 @@ class SimpleXlsxWriter
         $styles .= '</border>'; // 1: Thin Gray Border
         $styles .= '</borders>';
         $styles .= '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>';
-        $styles .= '<cellXfs count="9">';
+        $styles .= '<cellXfs count="20">';
         $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/>'; // 0: Normal with border
         $styles .= '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 1: Header (Navy, White, Bold, Center)
         $styles .= '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>'; // 2: Zebra Alt Row
         $styles .= '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>'; // 3: Bold with border
         $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 4: Center normal
         $styles .= '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 5: Center zebra
-        $styles .= '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 6: Green Marker (TERSEDIA)
-        $styles .= '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 7: Yellow Marker (MENIPIS)
-        $styles .= '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 8: Red Marker (HABIS)
+        $styles .= '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 6: Green Marker (TERSEDIA / CUKUP)
+        $styles .= '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 7: Yellow Marker (MENIPIS / KURANG)
+        $styles .= '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 8: Red Marker (HABIS)
+        $styles .= '<xf numFmtId="0" fontId="6" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 9: Banner 1 (Amber Gold, Bold Black, Center)
+        $styles .= '<xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 10: Banner 2 Red (Red, Bold White, Center)
+        $styles .= '<xf numFmtId="0" fontId="6" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'; // 11: Table Header (Bright Yellow, Bold Black, Center, WrapText)
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 12: Data Normal Center
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 13: Data Zebra Center (#F3F3F3)
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'; // 14: Data Normal Left
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'; // 15: Data Zebra Left (#F3F3F3)
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 16: Data Normal Right
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'; // 17: Data Zebra Right (#F3F3F3)
+        $styles .= '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'; // 18: Blank Spacing Cell
+        $styles .= '<xf numFmtId="0" fontId="6" fillId="12" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'; // 19: Banner 2 Blue (Soft Blue, Bold Black, Center)
         $styles .= '</cellXfs>';
         $styles .= '</styleSheet>';
         $files['xl/styles.xml'] = $styles;
@@ -144,12 +164,16 @@ class SimpleXlsxWriter
             $ws = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
             $ws .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
 
+            $isWarehouseTheme = (!empty($s['options']['theme']) && $s['options']['theme'] === 'warehouse');
+            $numCols = !empty($s['headers']) ? count($s['headers']) : 18;
+            $lastColLetter = $this->colLetter($numCols - 1);
+
             // Column Widths
             if (!empty($s['widths'])) {
                 $ws .= '<cols>';
                 foreach ($s['widths'] as $cIdx => $w) {
                     $cNum = $cIdx + 1;
-                    $ws .= '<col min="' . $cNum . '" max="' . $cNum . '" width="' . max(10, (float)$w) . '" customWidth="1"/>';
+                    $ws .= '<col min="' . $cNum . '" max="' . $cNum . '" width="' . max(8, (float)$w) . '" customWidth="1"/>';
                 }
                 $ws .= '</cols>';
             } elseif (!empty($s['headers'])) {
@@ -166,13 +190,52 @@ class SimpleXlsxWriter
             $ws .= '<sheetData>';
             $rNum = 1;
 
+            if ($isWarehouseTheme) {
+                // Row 1: Banner 1 (Gold/Amber)
+                $ws .= '<row r="1" customHeight="1" ht="28">';
+                for ($ci = 0; $ci < $numCols; $ci++) {
+                    $cRef = $this->colLetter($ci) . '1';
+                    if ($ci === 0) {
+                        $bannerText = htmlspecialchars((string)($s['options']['banner1'] ?? 'LAPORAN STOCK BARANG'), ENT_XML1);
+                        $ws .= '<c r="' . $cRef . '" t="inlineStr" s="9"><is><t>' . $bannerText . '</t></is></c>';
+                    } else {
+                        $ws .= '<c r="' . $cRef . '" s="9"/>';
+                    }
+                }
+                $ws .= '</row>';
+
+                // Row 2: Banner 2 (Red for KJG, Blue for LNP)
+                $ws .= '<row r="2" customHeight="1" ht="24">';
+                $banner2Style = 10;
+                $banner2Color = strtolower((string)($s['options']['banner2_color'] ?? ''));
+                $banner2TextRaw = (string)($s['options']['banner2'] ?? 'ITEM NAME');
+                if ($banner2Color === 'blue' || stripos($banner2TextRaw, 'LNP') !== false) {
+                    $banner2Style = 19;
+                }
+                for ($ci = 0; $ci < $numCols; $ci++) {
+                    $cRef = $this->colLetter($ci) . '2';
+                    if ($ci === 0) {
+                        $banner2Text = htmlspecialchars($banner2TextRaw, ENT_XML1);
+                        $ws .= '<c r="' . $cRef . '" t="inlineStr" s="' . $banner2Style . '"><is><t>' . $banner2Text . '</t></is></c>';
+                    } else {
+                        $ws .= '<c r="' . $cRef . '" s="' . $banner2Style . '"/>';
+                    }
+                }
+                $ws .= '</row>';
+
+                // Row 3 blank spacing row is removed as requested! Header immediately follows banner 2
+                $rNum = 3;
+            }
+
             // Header row
             if (!empty($s['headers'])) {
-                $ws .= '<row r="' . $rNum . '" customHeight="1" ht="26">';
+                $ht = $isWarehouseTheme ? 40 : 26;
+                $headerStyle = $isWarehouseTheme ? 11 : 1;
+                $ws .= '<row r="' . $rNum . '" customHeight="1" ht="' . $ht . '">';
                 $colIdx = 0;
                 foreach ($s['headers'] as $h) {
                     $cellRef = $this->colLetter($colIdx) . $rNum;
-                    $ws .= '<c r="' . $cellRef . '" t="inlineStr" s="1"><is><t>' . htmlspecialchars((string)$h, ENT_XML1) . '</t></is></c>';
+                    $ws .= '<c r="' . $cellRef . '" t="inlineStr" s="' . $headerStyle . '"><is><t>' . htmlspecialchars((string)$h, ENT_XML1) . '</t></is></c>';
                     $colIdx++;
                 }
                 $ws .= '</row>';
@@ -181,7 +244,8 @@ class SimpleXlsxWriter
 
             // Data rows
             foreach ($s['rows'] as $rowIdx => $row) {
-                $rowDefaultStyle = ($rowIdx % 2 === 1) ? 2 : 0; // subtle zebra alternating fill
+                $isZebra = ($rowIdx % 2 === 1);
+                $rowDefaultStyle = $isWarehouseTheme ? ($isZebra ? 13 : 12) : ($isZebra ? 2 : 0);
                 $ws .= '<row r="' . $rNum . '" customHeight="1" ht="20">';
                 $colIdx = 0;
                 foreach ($row as $rawVal) {
@@ -191,15 +255,29 @@ class SimpleXlsxWriter
                     if (is_array($rawVal)) {
                         $val = $rawVal['v'] ?? $rawVal['value'] ?? $rawVal[0] ?? '';
                         $marker = strtolower((string)($rawVal['marker'] ?? $rawVal['style'] ?? $rawVal['status'] ?? ''));
-                        if ($marker === 'green' || $marker === 'tersedia' || $marker === 'success') {
+                        $align = strtolower((string)($rawVal['align'] ?? ''));
+
+                        if ($marker === 'green' || $marker === 'tersedia' || $marker === 'cukup' || $marker === 'success') {
                             $cellStyle = 6;
-                        } elseif ($marker === 'yellow' || $marker === 'menipis' || $marker === 'warning') {
+                        } elseif ($marker === 'yellow' || $marker === 'menipis' || $marker === 'kurang' || $marker === 'warning') {
                             $cellStyle = 7;
                         } elseif ($marker === 'red' || $marker === 'habis' || $marker === 'danger' || $marker === 'out') {
                             $cellStyle = 8;
-                        } elseif (($rawVal['align'] ?? '') === 'center') {
-                            $cellStyle = ($rowIdx % 2 === 1) ? 5 : 4;
-                        } elseif (isset($rawVal['s'])) {
+                        } elseif ($isWarehouseTheme) {
+                            if ($align === 'left') {
+                                $cellStyle = $isZebra ? 15 : 14;
+                            } elseif ($align === 'right') {
+                                $cellStyle = $isZebra ? 17 : 16;
+                            } else {
+                                $cellStyle = $isZebra ? 13 : 12;
+                            }
+                        } else {
+                            if ($align === 'center') {
+                                $cellStyle = $isZebra ? 5 : 4;
+                            }
+                        }
+
+                        if (isset($rawVal['s'])) {
                             $cellStyle = (int)$rawVal['s'];
                         }
                     }
@@ -217,6 +295,15 @@ class SimpleXlsxWriter
             }
 
             $ws .= '</sheetData>';
+
+            // Merge Cells
+            if ($isWarehouseTheme) {
+                $ws .= '<mergeCells count="2">';
+                $ws .= '<mergeCell ref="A1:' . $lastColLetter . '1"/>';
+                $ws .= '<mergeCell ref="A2:' . $lastColLetter . '2"/>';
+                $ws .= '</mergeCells>';
+            }
+
             $ws .= '</worksheet>';
             $files['xl/worksheets/sheet' . ($idx + 1) . '.xml'] = $ws;
         }
@@ -230,7 +317,7 @@ class SimpleXlsxWriter
     public function download(string $filename = 'Export_Data.xlsx'): void
     {
         $content = $this->build();
-        $safeFilename = str_replace('"', '', $filename);
+        $safeFilename = str_replace(['"', '/', '\\', ':', '*', '?', '<', '>', '|'], '-', $filename);
 
         if (ob_get_level()) {
             ob_end_clean();

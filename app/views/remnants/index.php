@@ -6,7 +6,6 @@ include __DIR__ . '/../layout/header.php';
 <div class="card">
   <div class="card-header">
     <span><i class="bi bi-scissors me-2"></i>Daftar Material Sisa Potongan</span>
-    <span class="text-muted" style="font-size: 0.8rem;">Terhubung langsung ke barang induk & transaksi keluar</span>
   </div>
 
   <div class="card-body">
@@ -20,7 +19,7 @@ include __DIR__ . '/../layout/header.php';
 
       <div style="min-width: 160px;">
         <select name="company_id" class="form-select">
-          <option value="">-- Semua PT --</option>
+          <option value="">Semua PT</option>
           <?php foreach ($companies as $comp): ?>
             <option value="<?= $comp['id'] ?>" <?= ($_GET['company_id'] ?? '') == $comp['id'] ? 'selected' : '' ?>>
               <?= htmlspecialchars($comp['code'] . ' - ' . $comp['name']) ?>
@@ -31,7 +30,7 @@ include __DIR__ . '/../layout/header.php';
 
       <div style="min-width: 140px;">
         <select name="status" class="form-select">
-          <option value="">-- Semua Status --</option>
+          <option value="">Semua Status</option>
           <option value="tersedia" <?= ($_GET['status'] ?? '') === 'tersedia' ? 'selected' : '' ?>>Tersedia</option>
           <option value="terpakai" <?= ($_GET['status'] ?? '') === 'terpakai' ? 'selected' : '' ?>>Sudah Dipakai</option>
           <option value="scrap" <?= ($_GET['status'] ?? '') === 'scrap' ? 'selected' : '' ?>>Scrap</option>

@@ -254,106 +254,148 @@ class ReportController
                 $cleanName = trim(preg_replace('/\s*[-–(]\s*Supplier\s*:\s*[^)]+\)?/i', '', $cleanName));
             }
 
-            $price = (float)($item['purchase_price'] ?? 0);
-            $priceVal = ($price > 0) ? formatRupiah($price) : '-';
-
-            $poNumber = '';
-
-            // Process goods receipts for this item in the current month
             $itemReceipts = $b['goods_receipts'] ?? $item['goods_receipts'] ?? [];
-            $unit = strtoupper(trim((string)($item['unit']['code'] ?? $item['unit']['name'] ?? 'PCS')));
+            $itemIssues = $b['goods_issues'] ?? $item['goods_issues'] ?? [];
+            $priceHistories = $b['price_histories'] ?? $item['price_histories'] ?? [];
+            $unit = strtoupper(trim((string)($item['unit']['code'] ?? $item['unit']['name'] ?? 'Pcs')));
             if ($unit === '' || $unit === '-') {
-                $unit = 'PCS';
+                $unit = 'Pcs';
             }
 
+            // 1. Barang Masuk di bulan ini
             $monthlyReceipts = array_filter($itemReceipts, function ($r) use ($currentYm) {
                 if (empty($r['received_date'])) return false;
                 return str_starts_with($r['received_date'], $currentYm);
             });
 
-            $receiptsByDay = [];
+            $qtyMasuk = 0;
+            $receiptDays = [];
             $receiptSuppliers = [];
             $receiptPos = [];
 
             foreach ($monthlyReceipts as $r) {
+                $qtyMasuk += (float) ($r['qty'] ?? 0);
                 $dayNum = (int) date('j', strtotime($r['received_date']));
-                if (!isset($receiptsByDay[$dayNum])) {
-                    $receiptsByDay[$dayNum] = [
-                        'day' => $dayNum,
-                        'qty' => 0,
-                        'count' => 0,
-                    ];
+                if (!in_array($dayNum, $receiptDays, true)) {
+                    $receiptDays[] = $dayNum;
                 }
-                $receiptsByDay[$dayNum]['qty'] += (float) ($r['qty'] ?? 0);
-                $receiptsByDay[$dayNum]['count']++;
-
                 if (!empty($r['supplier_name']) && !in_array($r['supplier_name'], $receiptSuppliers, true)) {
                     $receiptSuppliers[] = $r['supplier_name'];
                 }
                 if (!empty($r['po_number'])) {
-                    $cleanPo = trim((string)$r['po_number']);
+                    $cleanPo = trim((string) $r['po_number']);
                     if ($cleanPo !== '' && !in_array($cleanPo, $receiptPos, true)) {
                         $receiptPos[] = $cleanPo;
                     }
                 }
             }
-            ksort($receiptsByDay);
+            sort($receiptDays);
+            $tglMasuk = !empty($receiptDays) ? implode(', ', $receiptDays) : '';
 
-            // If no supplier or PO found in current month receipts, check all receipts of this item
-            if (empty($receiptSuppliers) && !empty($itemReceipts)) {
+            // 2. Barang Keluar di bulan ini
+            $monthlyIssues = array_filter($itemIssues, function ($iss) use ($currentYm) {
+                if (empty($iss['issued_date'])) return false;
+                return str_starts_with($iss['issued_date'], $currentYm);
+            });
+
+            $qtyKeluar = 0;
+            $issueDays = [];
+            foreach ($monthlyIssues as $iss) {
+                $qtyKeluar += (float) ($iss['qty'] ?? 0);
+                $dayNum = (int) date('j', strtotime($iss['issued_date']));
+                if (!in_array($dayNum, $issueDays, true)) {
+                    $issueDays[] = $dayNum;
+                }
+            }
+            sort($issueDays);
+            $tglKeluar = !empty($issueDays) ? implode(', ', $issueDays) : '';
+
+            // 3. Stok Akhir dan Stok Awal
+            $stokAkhir = $stock;
+            $stokAwal = $stokAkhir - $qtyMasuk + $qtyKeluar;
+            if ($stokAwal < 0) {
+                $stokAwal = 0;
+            }
+
+            // 4. Harga Baru dan Harga Lama
+            $currentPrice = (float) ($item['purchase_price'] ?? 0);
+            if ($currentPrice <= 0 && !empty($itemReceipts)) {
+                foreach (array_reverse($itemReceipts) as $rcp) {
+                    if (!empty($rcp['unit_price']) && (float) $rcp['unit_price'] > 0) {
+                        $currentPrice = (float) $rcp['unit_price'];
+                        break;
+                    }
+                }
+            }
+
+            $hargaLamaVal = 0;
+            $hargaBaruVal = 0;
+
+            // Periksa riwayat perubahan harga
+            $hasPriceChange = false;
+            if (!empty($priceHistories)) {
+                foreach ($priceHistories as $ph) {
+                    $oldP = (float) ($ph['old_price'] ?? 0);
+                    $newP = (float) ($ph['new_price'] ?? $ph['price'] ?? 0);
+                    if ($oldP > 0 && $newP > 0 && $oldP != $newP) {
+                        $hargaLamaVal = $oldP;
+                        $hargaBaruVal = $newP;
+                        $hasPriceChange = true;
+                        break;
+                    }
+                }
+            }
+
+            // Jika tidak ada perubahan harga:
+            // Maka harga yang ada masuk ke kolom HARGA LAMA (tidak di kolom HARGA BARU)
+            if (!$hasPriceChange) {
+                if ($currentPrice > 0) {
+                    $hargaLamaVal = $currentPrice;
+                } elseif (!empty($priceHistories)) {
+                    $firstP = (float) ($priceHistories[0]['new_price'] ?? $priceHistories[0]['price'] ?? $priceHistories[0]['old_price'] ?? 0);
+                    if ($firstP > 0) {
+                        $hargaLamaVal = $firstP;
+                    }
+                }
+                $hargaBaruVal = 0;
+            }
+
+            $hargaLama = ($hargaLamaVal > 0) ? 'Rp. ' . number_format($hargaLamaVal, 0, ',', '.') : '';
+            $hargaBaru = ($hargaBaruVal > 0) ? 'Rp. ' . number_format($hargaBaruVal, 0, ',', '.') : '';
+
+            // 5. Supplier
+            if (empty($supplier) && !empty($receiptSuppliers)) {
+                $supplier = implode(', ', $receiptSuppliers);
+            }
+            if (empty($supplier) && !empty($itemReceipts)) {
                 foreach ($itemReceipts as $r) {
                     if (!empty($r['supplier_name']) && !in_array($r['supplier_name'], $receiptSuppliers, true)) {
                         $receiptSuppliers[] = $r['supplier_name'];
                     }
                 }
-            }
-            if (empty($receiptPos) && !empty($itemReceipts)) {
-                foreach ($itemReceipts as $r) {
-                    if (!empty($r['po_number'])) {
-                        $cleanPo = trim((string)$r['po_number']);
-                        if ($cleanPo !== '' && !in_array($cleanPo, $receiptPos, true)) {
-                            $receiptPos[] = $cleanPo;
-                        }
-                    }
+                if (!empty($receiptSuppliers)) {
+                    $supplier = implode(', ', $receiptSuppliers);
                 }
             }
 
-            if (empty($supplier) && !empty($receiptSuppliers)) {
-                $supplier = implode(', ', $receiptSuppliers);
-            }
-
-            // Jika ada 1 atau lebih (2 atau lebih) No. PO, gabungkan dengan koma seperti format kolom tanggal masuk
+            // 6. NO PO
+            $poNumber = '';
             if (!empty($receiptPos)) {
                 $poNumber = implode(', ', $receiptPos);
-            } else {
-                $poNumber = '-';
+            } elseif (!empty($item['po_number'])) {
+                $poNumber = trim((string) $item['po_number']);
             }
 
-            $tanggalMasuk = '';
-            $keterangan = '-';
-
-            if (count($receiptsByDay) > 1) {
-                // Multi-date goods receipts in the same month:
-                // Tanggal format: tanggalnya saja (e.g. "5, 20")
-                $tanggalMasuk = implode(', ', array_keys($receiptsByDay));
-
-                // Keterangan: rincian barang masuk per tanggal
-                $parts = [];
-                foreach ($receiptsByDay as $d => $info) {
-                    $qFormatted = rtrim(rtrim(number_format($info['qty'], 2, '.', ''), '0'), '.');
-                    $parts[] = "tgl {$d} ({$qFormatted} {$unit})";
-                }
-                $keterangan = 'Masuk ' . implode(', ', $parts);
-            } elseif (count($receiptsByDay) === 1) {
-                // Exactly 1 receipt date in this month: format tanggalnya saja
-                $dayNum = key($receiptsByDay);
-                $tanggalMasuk = (int) $dayNum;
-                $keterangan = '-';
+            // 7. Kondisi Stock ('HABIS' / 'KURANG' / 'CUKUP')
+            if ($stokAkhir <= 0) {
+                $kondisiStock = 'HABIS';
+                $statusMarker = 'habis';
+            } elseif ($min > 0 && $stokAkhir <= $min) {
+                $kondisiStock = 'KURANG';
+                $statusMarker = 'kurang';
             } else {
-                // No new goods receipt in this month, use initial/updated date day
-                $dayNum = (int) date('j', strtotime($rawDate));
-                $tanggalMasuk = ($dayNum > 0) ? (int) $dayNum : '-';
-                $keterangan = '-';
+                $kondisiStock = 'CUKUP';
+                $statusMarker = 'cukup';
             }
 
             $grouped[$currentYm][$cCode][] = [
@@ -361,32 +403,51 @@ class ReportController
                 'item_code' => $item['item_code'] ?? '-',
                 'category' => $item['category']['name'] ?? '-',
                 'item_name' => $cleanName,
-                'unit' => $item['unit']['code'] ?? $item['unit']['name'] ?? '-',
+                'stok_awal' => $stokAwal,
                 'supplier' => $supplier,
-                'price' => $priceVal,
+                'tgl_masuk' => $tglMasuk,
+                'qty_masuk' => $qtyMasuk > 0 ? $qtyMasuk : '',
+                'unit' => $unit,
                 'po_number' => $poNumber,
-                'qty' => $stock,
-                'status' => $status,
-                'tanggal_masuk' => $tanggalMasuk,
-                'keterangan' => $keterangan,
+                'harga_lama' => $hargaLama,
+                'harga_baru' => $hargaBaru,
+                'tgl_keluar' => $tglKeluar,
+                'qty_keluar' => $qtyKeluar > 0 ? $qtyKeluar : '',
+                'stok_akhir' => $stokAkhir,
+                'kondisi_stock' => $kondisiStock,
+                'status_marker' => $statusMarker,
+                'keterangan' => $item['description'] ?? '',
             ];
         }
 
         $headers = [
-            'No',
-            'ID / Kode Barang',
-            'Kategori',
-            'Nama Barang',
-            'Satuan',
-            'Supplier',
-            'Harga',
-            'No. PO',
-            'Total Stok',
-            'Tanggal Masuk',
-            'Keterangan',
+            'NO',
+            'KODE',
+            'KATEGORI',
+            'NAMA BARANG',
+            'STOK AWAL',
+            'SUPPLIER',
+            'TANGGAL BARANG MASUK',
+            'BARANG MASUK',
+            'SATUAN',
+            'NO PO',
+            'HARGA LAMA',
+            'HARGA BARU',
+            'TANGGAL BARANG KELUAR',
+            'BARANG KELUAR',
+            'SATUAN',
+            'STOK AKHIR',
+            'KONDISI STOCK',
+            'KETERANGAN',
         ];
 
-        $colWidths = [6, 18, 18, 45, 10, 22, 18, 26, 14, 16, 35];
+        $colWidths = [6, 14, 16, 48, 12, 24, 24, 16, 10.5, 24, 16, 16, 24.5, 16, 10.5, 14, 16, 28];
+
+        $monthNamesFull = [
+            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL',
+            5 => 'MEI', 6 => 'JUNI', 7 => 'JULI', 8 => 'AGUSTUS',
+            9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
+        ];
 
         $writer = new \App\Services\SimpleXlsxWriter();
 
@@ -395,6 +456,7 @@ class ReportController
             $year = $parts[0] ?? date('Y');
             $mNum = isset($parts[1]) ? (int) $parts[1] : (int) date('m');
             $mLabel = ($monthNames[$mNum] ?? 'Bln') . ' ' . $year;
+            $fullMonth = $monthNamesFull[$mNum] ?? strtoupper(date('F'));
 
             foreach ($companiesData as $cCode => $rowsData) {
                 // Natural ascending sort by item_code (e.g. KJG1, KJG2, ... / LNP1, LNP2, ...)
@@ -412,40 +474,62 @@ class ReportController
                         '-',
                         '-',
                         'Tidak ada data saldo stok pada periode ini',
+                        ['v' => 0, 'align' => 'center'],
+                        '-',
+                        '',
+                        '',
                         ['v' => '-', 'align' => 'center'],
                         '',
                         '',
                         '',
-                        ['v' => 0, 'status' => 'HABIS'],
+                        '',
+                        '',
                         ['v' => '-', 'align' => 'center'],
+                        ['v' => 0, 'align' => 'center'],
+                        ['v' => 'HABIS', 'align' => 'center', 'status' => 'habis'],
                         '-',
                     ];
                 } else {
                     foreach ($rowsData as $row) {
                         $sheetRows[] = [
                             ['v' => $no++, 'align' => 'center'],
-                            $row['item_code'],
-                            $row['category'],
-                            $row['item_name'],
+                            ['v' => $row['item_code'], 'align' => 'center'],
+                            ['v' => $row['category'], 'align' => 'center'],
+                            ['v' => $row['item_name'], 'align' => 'left'],
+                            ['v' => $row['stok_awal'], 'align' => 'center'],
+                            ['v' => $row['supplier'], 'align' => 'center'],
+                            ['v' => $row['tgl_masuk'], 'align' => 'center'],
+                            ['v' => $row['qty_masuk'], 'align' => 'center'],
                             ['v' => $row['unit'], 'align' => 'center'],
-                            $row['supplier'],
-                            ['v' => $row['price'],  'align' => 'center'],
-                            $row['po_number'],
+                            ['v' => $row['po_number'], 'align' => 'center'],
+                            ['v' => $row['harga_lama'], 'align' => 'center'],
+                            ['v' => $row['harga_baru'], 'align' => 'center'],
+                            ['v' => $row['tgl_keluar'], 'align' => 'center'],
+                            ['v' => $row['qty_keluar'], 'align' => 'center'],
+                            ['v' => $row['unit'], 'align' => 'center'],
+                            ['v' => $row['stok_akhir'], 'align' => 'center'],
                             [
-                                'v' => $row['qty'],
-                                'status' => $row['status'],
+                                'v' => $row['kondisi_stock'],
+                                'align' => 'center',
+                                'status' => $row['status_marker'] ?? ($row['kondisi_stock'] === 'CUKUP' ? 'cukup' : ($row['kondisi_stock'] === 'HABIS' ? 'habis' : 'kurang')),
                             ],
-                            ['v' => $row['tanggal_masuk'], 'align' => 'center'],
-                            ['v' => $row['keterangan']],
+                            ['v' => $row['keterangan'], 'align' => 'left'],
                         ];
                     }
                 }
 
-                $writer->addSheet($sheetTitle, $headers, $sheetRows, $colWidths);
+                $options = [
+                    'theme' => 'warehouse',
+                    'banner1' => "LAPORAN STOCK BARANG BULAN {$fullMonth} {$year}",
+                    'banner2' => "ITEM NAME {$cCode}",
+                    'banner2_color' => ($cCode === 'LNP' ? 'blue' : 'red'),
+                ];
+
+                $writer->addSheet($sheetTitle, $headers, $sheetRows, $colWidths, $options);
             }
         }
 
-        $filename = 'Laporan_Saldo_Stok_' . date('Ymd_His') . '.xlsx';
+        $filename = 'Laporan_Saldo_stok_' . date('d-m-Y') . '.xlsx';
         $writer->download($filename);
     }
 
@@ -590,7 +674,7 @@ class ReportController
             }
         }
 
-        $filename = 'Laporan_Mutasi_Stok_' . date('Ymd_His') . '.xlsx';
+        $filename = 'Laporan_Mutasi_Stok_' . date('d-m-Y') . '.xlsx';
         $writer->download($filename);
     }
 }

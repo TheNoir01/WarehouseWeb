@@ -153,16 +153,15 @@ include __DIR__ . '/../layout/header.php';
           <table class="table" id="receipt-items-table">
             <thead>
               <tr>
-                <th style="width: 50%;">Barang (Kode & Nama)</th>
-                <th style="width: 25%;">Qty Masuk (Koreksi)</th>
-                <th style="width: 17%;">Kondisi</th>
+                <th style="width: 65%;">Barang (Kode & Nama)</th>
+                <th style="width: 27%;">Qty Masuk (Koreksi)</th>
                 <th style="width: 8%; text-align: center;">Aksi</th>
               </tr>
             </thead>
             <tbody id="receipt-items-tbody">
               <?php if (empty($receipt['items'])): ?>
                 <tr id="empty-receipt-row">
-                  <td colspan="4" class="text-center text-muted" style="padding: 2rem;">
+                  <td colspan="3" class="text-center text-muted" style="padding: 2rem;">
                     Tidak ada barang dalam dokumen penerimaan ini.
                   </td>
                 </tr>
@@ -209,6 +208,7 @@ include __DIR__ . '/../layout/header.php';
                         <?php endif; ?>
                       </div>
                       <input type="hidden" name="items[<?= $idx ?>][warehouse_location_id]" value="<?= $it['warehouse_location_id'] ?? 1 ?>">
+                      <input type="hidden" name="items[<?= $idx ?>][condition]" value="<?= htmlspecialchars($it['condition'] ?? 'good') ?>">
                     </td>
 
                     <td>
@@ -231,14 +231,6 @@ include __DIR__ . '/../layout/header.php';
                           Min: <?= formatQty($qtyUsed) ?> (karena sudah terpakai)
                         </small>
                       <?php endif; ?>
-                    </td>
-
-                    <td>
-                      <select name="items[<?= $idx ?>][condition]" class="form-select" style="font-size: 0.85rem;">
-                        <option value="good" <?= ($it['condition'] ?? 'good') === 'good' ? 'selected' : '' ?>>Baik</option>
-                        <option value="damaged" <?= ($it['condition'] ?? '') === 'damaged' ? 'selected' : '' ?>>Rusak Fisik</option>
-                        <option value="other" <?= ($it['condition'] ?? '') === 'other' ? 'selected' : '' ?>>Lainnya</option>
-                      </select>
                     </td>
 
                     <td class="text-center">
@@ -466,19 +458,13 @@ function addItemToReceiptTable(item) {
         </span>
       </div>
       <input type="hidden" name="items[${rowCount}][warehouse_location_id]" value="1">
+      <input type="hidden" name="items[${rowCount}][condition]" value="good">
     </td>
     <td>
       <div class="input-group">
         <input type="number" step="${stepVal}" min="${minVal}" name="items[${rowCount}][qty]" class="form-control item-qty" required placeholder="0" data-min="${minVal}" oninput="validateRowQty(this)">
         <span class="unit-badge has-unit">${escapeHtml(item.unit_code || '-')}</span>
       </div>
-    </td>
-    <td>
-      <select name="items[${rowCount}][condition]" class="form-select" style="font-size: 0.85rem;">
-        <option value="good">Baik</option>
-        <option value="damaged">Rusak Fisik</option>
-        <option value="other">Lainnya</option>
-      </select>
     </td>
     <td class="text-center">
       <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)" title="Hapus">

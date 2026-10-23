@@ -199,6 +199,9 @@ switch ($route) {
     case 'issues/ajax-search':
         (new StockIssueController())->ajaxSearch();
         break;
+    case 'issues/export-excel':
+        (new StockIssueController())->exportExcel();
+        break;
 
     // Returns
     case 'returns':
@@ -328,6 +331,13 @@ switch ($route) {
             redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
         }
         (new UserController())->update();
+        break;
+    case 'users/destroy':
+    case 'users/delete':
+        if (!canManageUsers()) {
+            redirect('dashboard', 'Akses ditolak: Anda tidak memiliki izin untuk mengelola pengguna & hak akses.', 'danger');
+        }
+        (new UserController())->destroy();
         break;
 
     default:
